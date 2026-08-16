@@ -1,0 +1,6 @@
+# dados gerados em runtime
+data/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/

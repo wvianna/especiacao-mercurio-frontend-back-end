@@ -1,0 +1,569 @@
+/* ============================================================
+   IHM — Especiação de Mercúrio
+   Tema "sala de controle": fundo profundo, âmbar/ciano, mono.
+   ============================================================ */
+
+:root {
+  --bg: #0a0e14;
+  --bg-2: #0e141d;
+  --panel: #121a26;
+  --panel-2: #17222f;
+  --line: #22303f;
+  --line-2: #2c3d50;
+  --text: #dbe6f0;
+  --muted: #7f9bb5;
+  --cyan: #35d0e0;
+  --amber: #f5a623;
+  --red: #ff3b30;
+  --green: #34d399;
+  --yellow: #ffd166;
+  --purple: #c792ea;
+  --mono: 'JetBrains Mono', ui-monospace, monospace;
+  --disp: 'Rajdhani', 'Segoe UI', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background:
+    radial-gradient(1200px 600px at 80% -10%, rgba(53, 208, 224, 0.06), transparent 60%),
+    radial-gradient(900px 500px at 0% 110%, rgba(245, 166, 35, 0.05), transparent 60%),
+    var(--bg);
+  color: var(--text);
+  font-family: var(--disp);
+  font-size: 14px;
+  letter-spacing: 0.02em;
+}
+
+.app {
+  max-width: 1500px;
+  margin: 0 auto;
+  padding: 16px 20px 32px;
+}
+
+/* ---------------------------------------------------------- header */
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 0 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border: 1px solid var(--amber);
+  border-radius: 50%;
+  color: var(--amber);
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 20px;
+  box-shadow: 0 0 22px rgba(245, 166, 35, 0.35), inset 0 0 14px rgba(245, 166, 35, 0.15);
+}
+
+.brand h1 {
+  margin: 0;
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--text);
+}
+
+.brand p {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.run-btn {
+  padding: 10px 18px;
+  border: 1px solid var(--line-2);
+  border-radius: 6px;
+  background: linear-gradient(180deg, var(--panel-2), var(--panel));
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.run-btn:hover {
+  border-color: var(--cyan);
+  color: var(--cyan);
+  box-shadow: 0 0 14px rgba(53, 208, 224, 0.25);
+}
+
+.stop-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 22px;
+  border: 1px solid var(--red);
+  border-radius: 8px;
+  background: rgba(255, 59, 48, 0.12);
+  color: var(--red);
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 0 0 0 rgba(255, 59, 48, 0);
+}
+
+.stop-btn:hover {
+  background: rgba(255, 59, 48, 0.25);
+  box-shadow: 0 0 24px rgba(255, 59, 48, 0.35);
+}
+
+.stop-btn.pressed {
+  background: var(--red);
+  color: #fff;
+  box-shadow: 0 0 32px rgba(255, 59, 48, 0.7);
+}
+
+.stop-icon {
+  font-size: 13px;
+}
+
+/* ---------------------------------------------------------- status bar */
+.status-bar {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  margin-top: 12px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.state-badge {
+  padding: 5px 12px;
+  border-radius: 5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.state-safe {
+  background: rgba(52, 211, 153, 0.12);
+  color: var(--green);
+  border: 1px solid rgba(52, 211, 153, 0.4);
+}
+
+.state-run {
+  background: rgba(245, 166, 35, 0.12);
+  color: var(--amber);
+  border: 1px solid rgba(245, 166, 35, 0.4);
+  animation: pulse 1.6s ease-in-out infinite;
+}
+
+.stat b {
+  color: var(--cyan);
+  font-weight: 700;
+}
+
+.link-dot::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border-radius: 50%;
+}
+
+.link-dot.ok::before {
+  background: var(--green);
+  box-shadow: 0 0 8px var(--green);
+}
+
+.link-dot.down {
+  color: var(--red);
+}
+
+.link-dot.down::before {
+  background: var(--red);
+  box-shadow: 0 0 8px var(--red);
+}
+
+.alert-banner {
+  margin-left: auto;
+  padding: 5px 12px;
+  border: 1px solid var(--red);
+  border-radius: 5px;
+  background: rgba(255, 59, 48, 0.12);
+  color: var(--red);
+  font-weight: 700;
+  animation: pulse 1s ease-in-out infinite;
+}
+
+/* ---------------------------------------------------------- layout */
+.grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.col-main {
+  display: grid;
+  gap: 16px;
+  grid-auto-rows: min-content;
+}
+
+.col-side {
+  display: grid;
+  gap: 16px;
+  grid-auto-rows: min-content;
+}
+
+.panel {
+  background: linear-gradient(180deg, var(--panel), var(--bg-2));
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 14px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+}
+
+.panel-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.panel-head h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.panel-sub {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--muted);
+}
+
+/* ---------------------------------------------------------- synoptic */
+.synoptic-panel {
+  padding-bottom: 8px;
+}
+
+.synoptic-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.syn-pipe {
+  stroke: var(--line-2);
+  stroke-width: 4;
+  stroke-linecap: round;
+  transition: stroke 0.2s ease;
+}
+
+.syn-pipe.is-flow {
+  stroke: var(--cyan);
+  filter: drop-shadow(0 0 4px rgba(53, 208, 224, 0.7));
+}
+
+.syn-node rect {
+  fill: var(--panel-2);
+  stroke: var(--line-2);
+  stroke-width: 1.5;
+  transition: all 0.2s ease;
+}
+
+.syn-node.is-on rect {
+  stroke: var(--cyan);
+  fill: rgba(53, 208, 224, 0.08);
+}
+
+.syn-node.is-hot rect {
+  stroke: var(--red);
+  fill: rgba(255, 59, 48, 0.12);
+  filter: drop-shadow(0 0 6px rgba(255, 59, 48, 0.6));
+}
+
+.syn-label {
+  fill: var(--text);
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.syn-sub {
+  fill: var(--muted);
+  font-family: var(--mono);
+  font-size: 9px;
+}
+
+.syn-valve path,
+.syn-valve circle {
+  stroke: var(--line-2);
+  stroke-width: 2;
+  fill: var(--panel);
+  transition: all 0.2s ease;
+}
+
+.syn-valve.is-on path,
+.syn-valve.is-on circle {
+  stroke: var(--cyan);
+}
+
+.syn-tag {
+  fill: var(--muted);
+  font-family: var(--mono);
+  font-size: 10px;
+}
+
+.cup-ind {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.cup-ind.up {
+  color: var(--green);
+}
+
+.cup-ind.down {
+  color: var(--amber);
+}
+
+.syn-legend-flow {
+  fill: var(--cyan);
+}
+
+.syn-legend-hot {
+  fill: var(--red);
+}
+
+/* ---------------------------------------------------------- trend */
+.trend-panel {
+  padding-bottom: 6px;
+}
+
+.trend-canvas {
+  width: 100%;
+  height: 320px;
+  display: block;
+}
+
+/* ---------------------------------------------------------- manual */
+.btn-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.act-btn {
+  padding: 12px 10px;
+  border: 1px solid var(--line-2);
+  border-radius: 6px;
+  background: var(--panel-2);
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.act-btn:hover {
+  border-color: var(--muted);
+}
+
+.act-btn.is-on {
+  border-color: var(--cyan);
+  color: var(--cyan);
+  background: rgba(53, 208, 224, 0.1);
+  box-shadow: 0 0 10px rgba(53, 208, 224, 0.3);
+}
+
+.act-btn.pump.is-on {
+  border-color: var(--green);
+  color: var(--green);
+  background: rgba(52, 211, 153, 0.1);
+}
+
+.sliders {
+  margin-top: 14px;
+  display: grid;
+  gap: 12px;
+}
+
+.sliders label {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 10px;
+  align-items: center;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.sliders input[type='range'] {
+  grid-column: 1 / -1;
+  width: 100%;
+  accent-color: var(--amber);
+}
+
+.sliders em {
+  color: var(--amber);
+  font-style: normal;
+  font-weight: 700;
+}
+
+.sent-ok {
+  color: var(--green);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+/* ---------------------------------------------------------- config */
+.cfg-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.cfg-grid fieldset {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px;
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.cfg-grid legend {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  padding: 0 6px;
+}
+
+.cfg-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.cfg-field input {
+  width: 92px;
+  padding: 5px 8px;
+  border: 1px solid var(--line-2);
+  border-radius: 5px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 11px;
+  text-align: right;
+}
+
+.cfg-field input:focus {
+  outline: none;
+  border-color: var(--amber);
+  box-shadow: 0 0 8px rgba(245, 166, 35, 0.25);
+}
+
+.cfg-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.sec-btn {
+  flex: 1;
+  padding: 9px;
+  border: 1px solid var(--line-2);
+  border-radius: 6px;
+  background: var(--panel-2);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.sec-btn:hover {
+  border-color: var(--amber);
+  color: var(--amber);
+}
+
+.cfg-msg {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--green);
+  margin: 10px 0 0;
+}
+
+.cfg-loading {
+  font-family: var(--mono);
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* ---------------------------------------------------------- motion */
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@media (max-width: 1080px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}

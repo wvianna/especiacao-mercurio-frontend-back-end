@@ -21,17 +21,25 @@
 
 ## Blockers
 
-- Nenhum no momento (Fase de planejamento).
+- Nenhum no momento.
 
 ## Lessons
 
-- (vazio — registrar lições conforme a implementação avança)
+- **Includes de lib local no PlatformIO**: headers de `lib/<nome>/` são incluídos como `<header.h>` (sem o prefixo da pasta).
+- **Pin order no AVR**: declarar funções antes do uso em headers inline (`safeState` antes de `initPins`).
+- **Router WebSocket**: o contrato do TDD exige `/ws/telemetry` — o router REST usa prefixo `/api`, então o WS precisa de um router separado sem prefixo.
+- **Loop thread**: `serial.Serial()` lança `SerialException` (não `SerialError`) — capturar amplamente para a thread não morrer silenciosamente.
+- **pydantic**: dar default a campos obrigatórios quando o modelo tem instância default (ex.: `RampConfig.time_s`).
+- **FSM/atuadores**: manter o payload aninhado (`pwm.u`/`pwm.f2`) consistente na FSM para casar com o contrato do TDD.
+- **Socat + pyserial** funciona como porta virtual para testes E2E reais do enlace.
 
 ## Todos
 
+- [x] Validar E2E com simulador via socat (porta virtual).
 - [ ] Confirmar part number do termopar SPI (hardware).
 - [ ] Mapear porta serial no RPi antes da integração.
 - [ ] Definir margem de proteção de temperatura.
+- [ ] Calibrar curva Taxa × PWM e `set_system_rate`.
 
 ## Deferred Ideas
 

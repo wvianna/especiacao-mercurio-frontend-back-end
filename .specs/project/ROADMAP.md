@@ -1,7 +1,7 @@
 # Roadmap
 
-**Current Milestone:** M1 – Fundação + Firmware DAQ
-**Status:** Planning
+**Current Milestone:** M4 – Integração e Testes
+**Status:** Complete
 
 ---
 
@@ -12,7 +12,7 @@
 
 ### Features
 
-**[firmware-daq]** - PLANNED
+**[firmware-daq]** - COMPLETE
 
 - Controle das saídas digitais (SV1–SV5, bomba) e PWM (fornos 1 e 2).
 - Leitura de termopares T1/T2 via SPI.
@@ -28,7 +28,7 @@
 
 ### Features
 
-**[backend-controle]** - PLANNED
+**[backend-controle]** - COMPLETE
 
 - Enlace serial 4 Hz com reconexão.
 - FSM + matriz de atuadores T₀–T₃.
@@ -45,7 +45,7 @@
 
 ### Features
 
-**[ihm-web]** - PLANNED
+**[ihm-web]** - COMPLETE
 
 - Sinótico animado do processo.
 - Gráficos de tendência (VP×SP, °C/s, PWM) em 4 Hz.
@@ -62,7 +62,7 @@
 
 ### Features
 
-**[integracao-sistema]** - PLANNED
+**[integracao-sistema]** - COMPLETE
 
 - Simulador do DAQ para testes sem hardware.
 - E2E do ciclo T₀→T₃.

@@ -1,7 +1,7 @@
 # Backend de Controle Tasks
 
 **Design**: `.specs/features/backend-controle/design.md`
-**Status**: Draft
+**Status**: Done
 
 ---
 

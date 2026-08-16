@@ -1,7 +1,7 @@
 # Integração e Testes de Sistema Tasks
 
 **Design**: `.specs/features/integracao-sistema/design.md`
-**Status**: Draft
+**Status**: Done
 
 ---
 

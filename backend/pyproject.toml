@@ -1,0 +1,5 @@
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "e2e: testes de integração com simulador do DAQ (requer socat/serial)",
+]

@@ -1,7 +1,7 @@
 # Firmware DAQ Tasks
 
 **Design**: `.specs/features/firmware-daq/design.md`
-**Status**: Draft
+**Status**: Done
 
 ---
 

@@ -1,7 +1,7 @@
 # IHM Web Tasks
 
 **Design**: `.specs/features/ihm-web/design.md`
-**Status**: Draft
+**Status**: Done
 
 ---
 
