@@ -1,0 +1,72 @@
+# ──────────────────────────────────────────────
+# Python / Backend
+# ──────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Ambiente virtual
+.venv/
+venv/
+env/
+
+# Ferramentas de teste e análise
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+coverage.xml
+.tox/
+
+# Distribuição / build
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Arquivos de dados gerados em runtime
+backend/data/
+
+# ──────────────────────────────────────────────
+# PlatformIO / Firmware
+# ──────────────────────────────────────────────
+# Diretório de build (dependências + artefatos compilados)
+.pio/
+firmware/.pio/
+
+# Diretório de dependências do PlatformIO (versionado via platformio.ini)
+firmware/lib/__pio_*
+
+# ──────────────────────────────────────────────
+# Editores / IDE
+# ──────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.fleet/
+
+# ──────────────────────────────────────────────
+# Sistema operacional
+# ──────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ──────────────────────────────────────────────
+# Logs e arquivos sensíveis
+# ──────────────────────────────────────────────
+*.log
+.env
+.env.*
+!.env.example
+
+# ──────────────────────────────────────────────
+# Diversos
+# ──────────────────────────────────────────────
+*.tmp
+*.bak
+*.orig
