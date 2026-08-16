@@ -154,4 +154,4 @@ Execução da implementação com auxílio dos modelos de inteligência artifici
 
 ------
 Se gostou deixe um like ⭐ no repositório e compartilhe com colegas de laboratório.
-Se não gostou 
+Se não gostou também deixe um like ⭐ e abra uma issue com sugestões de melhoria.
