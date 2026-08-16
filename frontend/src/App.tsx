@@ -8,9 +8,11 @@ import { StopButton } from './components/StopButton';
 import { useTelemetry } from './store/telemetry';
 import { connectTelemetry } from './ws/connection';
 import { api } from './api/client';
+import { isManualMode } from './lib/phases';
 
 export function App() {
   const apply = useTelemetry((s) => s.apply);
+  const latest = useTelemetry((s) => s.latest);
   const [connected, setConnected] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
 
@@ -18,6 +20,8 @@ export function App() {
     const dispose = connectTelemetry(apply, setConnected);
     return dispose;
   }, [apply]);
+
+  const manualMode = latest ? isManualMode(latest.state) : false;
 
   const run = (fn: () => Promise<unknown>, label: string) => {
     setBusy(label);
@@ -37,7 +41,27 @@ export function App() {
           </div>
         </div>
         <div className="header-actions">
-          <button className="run-btn" disabled={!!busy} onClick={() => run(api.start, 'start')}>
+          <div className="mode-toggle" aria-label="Modo de operação">
+            <button
+              className={`mode-btn${!manualMode ? ' active' : ''}`}
+              disabled={!!busy}
+              onClick={() => run(() => api.setMode('auto'), 'mode')}
+            >
+              AUTO
+            </button>
+            <button
+              className={`mode-btn${manualMode ? ' active' : ''}`}
+              disabled={!!busy}
+              onClick={() => run(() => api.setMode('manual'), 'mode')}
+            >
+              MANUAL
+            </button>
+          </div>
+          <button
+            className="run-btn"
+            disabled={!!busy || manualMode}
+            onClick={() => run(api.start, 'start')}
+          >
             INICIAR
           </button>
           <button className="run-btn" disabled={!!busy} onClick={() => run(api.stop, 'stop')}>
@@ -55,7 +79,7 @@ export function App() {
           <TrendChart />
         </div>
         <aside className="col-side">
-          <ManualPanel />
+          <ManualPanel enabled={manualMode} />
           <ConfigPanel />
         </aside>
       </main>

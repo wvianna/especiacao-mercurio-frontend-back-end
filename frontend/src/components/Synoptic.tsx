@@ -1,5 +1,6 @@
 import { useTelemetry } from '../store/telemetry';
 import type { Telemetry } from '../types';
+import { phaseLabel } from '../lib/phases';
 
 function useActives() {
   const latest = useTelemetry((s) => s.latest);
@@ -88,7 +89,7 @@ function Valve({
 
 /** Sinótico do processo: fluxograma animado (azul = fluxo, vermelho = resistência). */
 export function Synoptic() {
-  const { active, pump, heatU, heatF2, cupUp } = useActives();
+  const { t, active, pump, heatU, heatF2, cupUp } = useActives();
 
   const flowHe = active('sv1'); // entrada de hélio
   const flowReactor = flowHe || pump; // agitação / TEBS
@@ -100,8 +101,22 @@ export function Synoptic() {
     <div className="panel synoptic-panel">
       <div className="panel-head">
         <h2>Sinótico do Processo</h2>
-        <span className={`cup-ind ${cupUp ? 'up' : 'down'}`}>
-          Copo N₂ {cupUp ? 'LEVANTADO' : 'ABAIXADO'}
+        <span className="syn-readout">
+          <span className={`phase-chip ${t?.state === 'SAFE' ? 'state-safe' : 'state-run'}`}>
+            {t ? phaseLabel(t.state) : '—'}
+          </span>
+          <span className="stat">
+            T1 <b>{t ? `${t.temp.t1.toFixed(1)} °C` : '—'}</b>
+          </span>
+          <span className="stat">
+            T2 <b>{t ? `${t.temp.t2.toFixed(1)} °C` : '—'}</b>
+          </span>
+          <span className="stat">
+            Taxa <b>{t ? `${t.rate_c_per_s.toFixed(3)} °C/s` : '—'}</b>
+          </span>
+          <span className={`cup-ind ${cupUp ? 'up' : 'down'}`}>
+            Copo N₂ {cupUp ? 'LEVANTADO' : 'ABAIXADO'}
+          </span>
         </span>
       </div>
       <svg viewBox="0 0 1040 300" className="synoptic-svg" role="img" aria-label="Fluxograma do processo">

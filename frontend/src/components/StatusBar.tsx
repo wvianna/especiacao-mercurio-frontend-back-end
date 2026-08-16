@@ -1,13 +1,5 @@
 import { useTelemetry } from '../store/telemetry';
-
-const PHASE_LABEL: Record<string, string> = {
-  SAFE: 'SAFE STATE',
-  T0_DERIV: 'T₀ · Derivação / Criofocalização',
-  T1_STAB: 'T₁ · Estabilização Térmica',
-  T2_RAMPA: 'T₂ · Rampa de Aquecimento',
-  T3_PURGA: 'T₃ · Purga Total',
-  MANUAL: 'MANUAL',
-};
+import { phaseLabel } from '../lib/phases';
 
 /** Barra de status com indicadores de fase, temperaturas, taxa e alertas. */
 export function StatusBar({ connected }: { connected: boolean }) {
@@ -24,7 +16,7 @@ export function StatusBar({ connected }: { connected: boolean }) {
     );
   }
 
-  const stateLabel = PHASE_LABEL[latest.state] ?? latest.state;
+  const stateLabel = phaseLabel(latest.state);
   const isSafe = latest.state === 'SAFE';
   const hasError = latest.error_code !== 0;
   const disconnected = !connected;

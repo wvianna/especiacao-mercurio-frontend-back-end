@@ -26,5 +26,7 @@ export const api = {
   start: () => req<{ state: string }>('/api/control/start', { method: 'POST' }),
   stop: () => req<{ state: string }>('/api/control/stop', { method: 'POST' }),
   emergency: () => req<{ state: string }>('/api/control/emergency', { method: 'POST' }),
+  setMode: (mode: 'auto' | 'manual') =>
+    req<{ state: string }>('/api/control/mode', { method: 'PUT', body: JSON.stringify({ mode }) }),
   manual: (state: ManualState) => req<{ state: string }>('/api/manual', { method: 'PUT', body: JSON.stringify(state) }),
 };

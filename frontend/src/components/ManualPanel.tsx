@@ -9,8 +9,8 @@ const VALVES = [
   { key: 'sv5', label: 'SV5 · Pistão' },
 ] as const;
 
-/** Matriz de controles manuais: SV1-SV5, bomba e sliders de VM. */
-export function ManualPanel() {
+/** Matriz de controles manuais: SV1-SV5, bomba e sliders de VM (habilitável). */
+export function ManualPanel({ enabled }: { enabled: boolean }) {
   const [valves, setValves] = useState<Record<string, number>>({
     sv1: 0,
     sv2: 0,
@@ -29,6 +29,7 @@ export function ManualPanel() {
   }, [sent]);
 
   const push = (next: { valves?: Record<string, number>; pump?: number; pwm?: { u: number; f2: number } }) => {
+    if (!enabled) return;
     const state = {
       valves: next.valves ?? valves,
       pump: next.pump ?? pump,
@@ -58,10 +59,11 @@ export function ManualPanel() {
   };
 
   return (
-    <div className="panel manual-panel">
+    <div className={`panel manual-panel${enabled ? '' : ' is-locked'}`}>
       <div className="panel-head">
         <h2>Controles Manuais</h2>
         {sent && <span className="sent-ok">✓ enviado</span>}
+        {!enabled && <span className="lock-hint">🔒 ative o modo manual</span>}
       </div>
       <div className="btn-grid">
         {VALVES.map((v) => (
@@ -69,11 +71,16 @@ export function ManualPanel() {
             key={v.key}
             className={`act-btn${valves[v.key] ? ' is-on' : ''}`}
             onClick={() => toggleValve(v.key)}
+            disabled={!enabled}
           >
             {v.label}
           </button>
         ))}
-        <button className={`act-btn pump${pump ? ' is-on' : ''}`} onClick={togglePump}>
+        <button
+          className={`act-btn pump${pump ? ' is-on' : ''}`}
+          onClick={togglePump}
+          disabled={!enabled}
+        >
           Bomba
         </button>
       </div>
@@ -85,6 +92,7 @@ export function ManualPanel() {
             min={0}
             max={255}
             value={pwm.u}
+            disabled={!enabled}
             onChange={(e) => setSlider('u', Number(e.target.value))}
           />
           <em>{pwm.u}</em>
@@ -96,6 +104,7 @@ export function ManualPanel() {
             min={0}
             max={255}
             value={pwm.f2}
+            disabled={!enabled}
             onChange={(e) => setSlider('f2', Number(e.target.value))}
           />
           <em>{pwm.f2}</em>
