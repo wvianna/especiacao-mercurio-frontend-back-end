@@ -15,6 +15,10 @@ class ManualPayload(BaseModel):
     pwm: dict = {"u": 0, "f2": 0}
 
 
+class ModePayload(BaseModel):
+    mode: str
+
+
 def create_websocket_router(hub) -> APIRouter:
     """Router sem prefixo /api: o WebSocket fica em /ws/telemetry (contrato do TDD)."""
     router = APIRouter()
@@ -79,6 +83,19 @@ def create_router(hub) -> APIRouter:
     @router.put("/manual")
     def manual(payload: ManualPayload):
         hub.fsm.set_manual(payload.valves, payload.pump, payload.pwm)
+        return {"state": hub.fsm.state.value}
+
+    @router.put("/control/mode")
+    def set_mode(payload: ModePayload):
+        """Alterna entre operação AUTOMÁTICA e MANUAL."""
+        if payload.mode == "manual":
+            hub.fsm.handle_event(Event.MANUAL)
+        elif payload.mode == "auto":
+            hub.fsm.handle_event(Event.AUTO)
+        else:
+            raise HTTPException(
+                status_code=422, detail="mode deve ser 'auto' ou 'manual'"
+            )
         return {"state": hub.fsm.state.value}
 
     return router

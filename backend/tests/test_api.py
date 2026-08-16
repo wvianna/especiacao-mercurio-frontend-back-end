@@ -64,3 +64,23 @@ def test_manual(tmp_path):
         )
     assert r.status_code == 200
     assert r.json()["state"] == "MANUAL"
+
+
+def test_mode_manual_and_auto(tmp_path):
+    hub = make_hub(tmp_path)
+    app = create_app(hub)
+    with TestClient(app) as client:
+        r = client.put("/api/control/mode", json={"mode": "manual"})
+        assert r.status_code == 200
+        assert r.json()["state"] == "MANUAL"
+        r = client.put("/api/control/mode", json={"mode": "auto"})
+        assert r.status_code == 200
+        assert r.json()["state"] == "SAFE"
+
+
+def test_mode_invalid_returns_422(tmp_path):
+    hub = make_hub(tmp_path)
+    app = create_app(hub)
+    with TestClient(app) as client:
+        r = client.put("/api/control/mode", json={"mode": "xyz"})
+    assert r.status_code == 422
