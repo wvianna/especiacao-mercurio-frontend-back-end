@@ -7,7 +7,7 @@
 Sistema de automação e supervisão para **preparação de amostras em especiação de mercúrio**: controle do acionamento das válvulas, bomba e aquecedores, e controle da rampa de temperatura do Tubo U (−50 → 230 °C) e do Forno 2 (700 °C), com Raspberry Pi (Python), Arduino Uno (DAQ em tempo real) e IHM Web.
 
 > [!NOTE]
-> Este projeto moderniza um sistema legado (LabVIEW) e é guiado pelas especificações em [`docs/especificacao.txt`](docs/especificacao.txt) e [`docs/requisitos.txt`](docs/requisitos.txt).
+> Este projeto moderniza um sistema legado (LabVIEW) e é guiado pelas especificações em [`docs/especificacao.md`](docs/especificacao.md) e [`docs/requisitos.md`](docs/requisitos.md).
 
 ## Funcionalidades
 
@@ -138,7 +138,7 @@ cd ..
 
 - **[HANDSOFF](docs/HANDSOFF.md)** — guia de operação, arquitetura e integração para dar continuidade ao projeto.
 - **[TDD](docs/TDD.md)** — documento de design técnico.
-- **[Especificação](docs/especificacao.txt)** e **[Requisitos](docs/requisitos.txt)** — base do processo analítico.
+- **[Especificação](docs/especificacao.md)** e **[Requisitos](docs/requisitos.md)** — base do processo analítico.
 - **[.specs](.specs/)** — planejamento Spec-Driven com specs, designs e tasks por feature.
 
 ## Autoria
@@ -148,6 +148,10 @@ cd ..
 
 Desenvolvido com auxílio do TDD (Test-Driven Development) e Spec-Driven Development (SDD) para garantir rastreabilidade entre requisitos, design, implementação e testes.
 
-Implementação baseada em [especificações](.specs/) e [requisitos](docs/requisitos.txt) do sistema de automação para especiação de mercúrio.
+Implementação baseada em [especificações](.specs/) e [requisitos](docs/requisitos.md) do sistema de automação para especiação de mercúrio.
 
 Execução da implementação com auxílio dos modelos de inteligência artificial DeepSeek V4 Flash e Pro.
+
+------
+Se gostou deixe um like ⭐ no repositório e compartilhe com colegas de laboratório.
+Se não gostou 
