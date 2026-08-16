@@ -16,9 +16,51 @@ Topologia mestre-escravo: o RPi (mestre) executa a FSM/PID e envia comandos; o A
 
 ---
 
+## 1.1 Arquitetura e fluxo de dados
+
+```mermaid
+graph LR
+    F[IHM Web<br/>React] -->|HTTP/WS| B[Backend RPi<br/>Python + FastAPI]
+    B -->|JSON em disco| S[(params.json<br/>+ .bak)]
+    B <-->|USB Serial JSON @4Hz| D[DAQ Arduino<br/>C++]
+    D --> P[Processo<br/>Válvulas/Bomba/Fornos/Termopares]
+```
+
+**Responsabilidades por módulo:**
+
+- **Backend (`backend/app/`)**
+  - `fsm.py` — Máquina de Estados (SAFE, T₀–T₃, MANUAL) + matriz de atuadores.
+  - `pid.py` / `ramp.py` — PID do Forno 2 e rampa do Tubo U (razão de taxas T<0, PID T≥0) + °C/s.
+  - `serial_link.py` — enlace pyserial com codec JSON e reconexão.
+  - `loop.py` — thread de controle a 4 Hz, watchdog (1 s sem resposta → SAFE) e telemetria.
+  - `config_store.py` — persistência atômica de parâmetros com backup rotativo.
+  - `api.py` / `main.py` — API REST + WebSocket e fábrica da aplicação.
+- **Firmware (`firmware/`)**
+  - `src/pin_map.h` — mapa de I/O e Safe State.
+  - `src/actuator_driver.*` — aplica válvulas/bomba/PWM.
+  - `src/thermocouple_reader.*` — leitura SPI dos termopares (MAX31855).
+  - `lib/daqcore/` — parser JSON e watchdog (portáveis, testáveis em host).
+- **Frontend (`frontend/src/`)**
+  - `App.tsx` — layout, seletor AUTO/MANUAL e integração WS.
+  - `components/Synoptic.tsx` — fluxograma com fase atual e leituras.
+  - `components/TrendChart.tsx` — gráficos VP×SP, °C/s e PWM (canvas).
+  - `components/ManualPanel.tsx` — controles manuais (habilitados no modo manual).
+  - `components/ConfigPanel.tsx` — parâmetros com LER/ESCREVER.
+
+**Fluxo típico (ciclo a 250 ms):**
+
+1. Backend envia JSON de escrita (válvulas/bomba/PWM) ao DAQ.
+2. DAQ lê termopares e responde JSON de leitura (T1/T2, status, erro).
+3. Backend atualiza a FSM (PID/rampa) e publica telemetria no WebSocket.
+4. IHM renderiza sinótico + gráficos a partir da telemetria.
+
+---
+
 ## 2. Como executar
 
 ### Backend + IHM
+
+> **Recomendado:** use os scripts prontos (veja §9) — `./scripts/start.sh`, `./scripts/stop.sh`.
 
 ```bash
 cd backend
@@ -207,3 +249,106 @@ SERIAL_PORT=/dev/pts/X .venv/bin/python -m app
 ```
 
 O simulador do DAQ vive em `backend/tests/simulator.py` e emula o protocolo JSON.
+
+---
+
+## 10. Como usar o sistema (operação da IHM)
+
+A IHM é servida pelo backend em `http://<ip-do-rpi>:8000`. Fluxo de operação:
+
+1. **Conferir estado inicial** — o badge deve mostrar **SAFE STATE**; T1/T2 com leitura válida e "WS ok" na barra de status.
+2. **Configurar o método** (painel à direita):
+   - Tempos T₁/T₂/T₃ (s), tempo de rampa, temperatura do N₂, alvo (230 °C), ganhos PID e setpoint do Forno 2 (700 °C).
+   - **ESCREVER** persiste em disco; **LER** recarrega. (Parâmetros são persistentes entre execuções.)
+3. **Modo AUTOMÁTICO** (padrão):
+   - Pressione **INICIAR** → o sistema percorre T₀ → T₃ automaticamente.
+   - Acompanhe a **fase atual** no sinótico/badge, as temperaturas e a taxa de variação (°C/s).
+   - **PARAR** encerra o ciclo (volta ao Safe State).
+4. **Modo MANUAL** (operação direta):
+   - Selecione **MANUAL** no cabeçalho → os controles de válvulas (SV1–SV5), bomba e aquecedores (sliders de VM) são habilitados.
+   - Acione os dispositivos diretamente; cada ação é enviada ao DAQ via `PUT /api/manual`.
+   - Selecione **AUTO** para voltar ao modo automático (retorna ao Safe State).
+5. **Emergência** — **STOP** a qualquer momento: desce o copo de N₂ (SV5), desliga os fornos e retorna ao Safe State.
+
+> [!IMPORTANT]
+> Em **AUTO**, os controles manuais ficam bloqueados (proteção contra operação indevida durante o ciclo). O **INICIAR** só opera a partir do Safe State.
+
+---
+
+## 11. API de referência (Backend → IHM)
+
+| Método | Endpoint                  | Descrição                                  |
+| ------ | ------------------------- | ------------------------------------------ |
+| GET    | `/api/config`             | Parâmetros persistidos                     |
+| PUT    | `/api/config`             | Valida e persiste parâmetros               |
+| POST   | `/api/control/start`      | Inicia o ciclo automático                  |
+| POST   | `/api/control/stop`       | Para o processo (Safe State)               |
+| POST   | `/api/control/emergency`  | STOP de alta prioridade                    |
+| PUT    | `/api/control/mode`       | `{ "mode": "auto" \| "manual" }`           |
+| PUT    | `/api/manual`             | Override manual de atuadores/PWM           |
+| WS     | `/ws/telemetry`           | Telemetria em tempo real (4 Hz)            |
+
+Exemplo de troca de modo:
+
+```bash
+curl -X PUT http://localhost:8000/api/control/mode -H 'Content-Type: application/json' -d '{"mode":"manual"}'
+# {"state":"MANUAL"}
+```
+
+---
+
+## 12. Scripts de automação
+
+| Script                  | Função                                            |
+| ----------------------- | ------------------------------------------------- |
+| `./scripts/start.sh`    | Inicia backend (+ IHM) — opção `--dev` para Vite  |
+| `./scripts/stop.sh`     | Encerra os serviços (PID files em `logs/`)        |
+| `./scripts/firmware.sh` | `build` ou `upload` do firmware no Arduino Uno    |
+| `./scripts/test.sh`     | Roda testes (`all`, `backend`, `frontend`, `firmware`) |
+
+---
+
+## 13. Guia para agentes de IA (continuidade)
+
+Este documento é o ponto de partida para outro agente dar continuidade ao projeto.
+
+### Estado atual
+
+- Implementação **M1–M4 concluída e validada** (ver `.specs/project/ROADMAP.md`).
+- Testes: 36 (backend) + 9 (firmware host) + 6 (frontend) — todos verdes.
+- Builds: firmware para Uno OK; frontend `npm run build` OK.
+- Commits em `main` (mensagens em Conventional Commits).
+
+### Onde está cada coisa
+
+| Assunto                        | Local                                   |
+| ------------------------------ | --------------------------------------- |
+| Spec/design/tasks por feature  | `.specs/features/*/`                    |
+| Decisões e lições              | `.specs/project/STATE.md`               |
+| Design técnico                 | `docs/TDD.md`                           |
+| Contratos JSON / pinagem       | `docs/HANDSOFF.md` (§4)                 |
+| Testes                         | `backend/tests/`, `frontend/src/**/*.test.ts`, `firmware/test/` |
+
+### Como validar antes de continuar
+
+```bash
+./scripts/test.sh all
+cd firmware && pio run -e uno
+cd frontend && npm run build
+```
+
+### Gray areas pendentes (decisões abertas)
+
+1. **Part number do amplificador SPI do termopar** (MAX31855 vs MAX6675) — confirmar com o hardware.
+2. **Interpolação da curva Taxa × % PWM** do Tubo U — calibrar em bancada e injetar via `RampController.set_system_rate()`.
+3. **Margem de proteção de temperatura** (valor que dispara STOP automático).
+4. **Persistência automática vs. apenas via ESCREVER**.
+5. **Porta serial definitiva** no RPi (`/dev/ttyUSB0` vs `/dev/ttyACM0`).
+
+### Padrões do projeto (para agentes)
+
+- **Commits atômicos** com Conventional Commits (`feat`, `fix`, `chore`, `docs`, `test`).
+- **TDD**: testes antes da implementação; gate por task (ver `.specs/codebase/TESTING.md`).
+- **Delegação**: tasks `[P]` de `.specs/features/*/tasks.md` podem rodar em paralelo via subagentes.
+- **Não commitar**: `.venv/`, `node_modules/`, `dist/`, `.pio/`, `backend/data/` (ignorados).
+- **Idioma**: comentários e docs em pt-BR; código e mensagens de commit em inglês.
