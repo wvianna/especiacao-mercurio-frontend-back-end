@@ -145,6 +145,7 @@ cd ..
 
 - William da Silva Vianna
 - Renato Gomes Sobral Barcellos
+------
 
 Desenvolvido com auxílio do TDD (Test-Driven Development) e Spec-Driven Development (SDD) para garantir rastreabilidade entre requisitos, design, implementação e testes.
 
@@ -155,3 +156,4 @@ Execução da implementação com auxílio dos modelos de inteligência artifici
 ------
 Se gostou deixe um like ⭐ no repositório e compartilhe com colegas de laboratório.
 Se não gostou também deixe um like ⭐ e abra uma issue com sugestões de melhoria.
+------
