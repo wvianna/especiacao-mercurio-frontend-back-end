@@ -14,7 +14,7 @@ graph TD
     S[Serial USB] --> P[Parser JSON<br/>ArduinoJson]
     P --> A[Aplicar atuadores<br/>SV1-SV5, Bomba]
     P --> W[PWM Fornos<br/>analogWrite]
-    SP[SPI MAX31855 x2] --> R[Leitura T1/T2]
+    SP[SPI MAX6675 x2] --> R[Leitura T1/T2]
     A --> O[Montar resposta JSON]
     W --> O
     R --> O
@@ -30,7 +30,7 @@ graph TD
 | ---------------- | ------------------- | ----------------------------------- |
 | ArduinoJson      | lib externa         | Parse + serialização de pacotes     |
 | Biblioteca SPI    | lib do core Arduino | Comunicação com os termopares       |
-| Biblioteca termopar (MAX31855/MAX6675) | lib externa | Leitura T1/T2 (confirmar part no STATE.md) |
+| Biblioteca termopar (MAX6675) | lib externa | Leitura T1/T2 |
 
 ## Integration Points
 
@@ -128,5 +128,5 @@ struct Report {
 | Decision                              | Choice                 | Rationale                                        |
 | ------------------------------------- | ---------------------- | ------------------------------------------------ |
 | Parse JSON no micro                   | ArduinoJson            | Padrão, leve, estável                            |
-| Termopar via SPI                      | MAX31855/MAX6675 (confirmar) | Compatível com CLK/MISO/CS do mapa de I/O    |
+| Termopar via SPI                      | MAX6675                    | Compatível com CLK/MISO/CS do mapa de I/O    |
 | Serial framing                        | Line-delimited JSON    | Simples de depurar e robusto                     |
