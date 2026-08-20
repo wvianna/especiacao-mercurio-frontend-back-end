@@ -24,6 +24,30 @@
   --grid-line: rgba(125, 152, 178, 0.07);
 }
 
+/* ------------------------------------------------------- tema claro */
+:root[data-theme='light'] {
+  --bg: #eef2f7;
+  --bg-2: #e3e9f1;
+  --panel: #ffffff;
+  --panel-2: #f1f5f9;
+  --panel-3: #e2e9f1;
+  --line: #ccd6e1;
+  --line-2: #a9bccd;
+  --text: #16212e;
+  --muted: #5c6d7e;
+  --cyan: #0c8ea8;
+  --amber: #c2690c;
+  --red: #d4352c;
+  --green: #0e9c6d;
+  --yellow: #b8860b;
+  --purple: #7b3ff2;
+  --grid-line: rgba(50, 70, 95, 0.1);
+}
+
+body {
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -290,6 +314,27 @@ body {
 
 .stop-icon {
   font-size: 13px;
+}
+
+.theme-btn {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--line-2);
+  border-radius: 6px;
+  background: var(--panel-2);
+  color: var(--amber);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.theme-btn:hover {
+  border-color: var(--amber);
+  box-shadow: 0 0 10px rgba(245, 166, 35, 0.3);
 }
 
 /* ---------------------------------------------------------- status bar */

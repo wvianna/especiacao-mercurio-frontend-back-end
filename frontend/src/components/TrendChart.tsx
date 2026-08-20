@@ -48,9 +48,10 @@ function drawChart(
   ctx.textBaseline = 'top';
   ctx.fillText(opts.title.toUpperCase(), pad.left, 2);
 
-  // fundo
-  ctx.fillStyle = 'rgba(8, 12, 18, 0.6)';
-  ctx.fillRect(pad.left, pad.top, plotW, plotH);
+  // fundo do gráfico: sempre escuro para garantir contraste do texto
+  // (título/eixos/legenda) em qualquer tema (escuro ou claro).
+  ctx.fillStyle = 'rgba(8, 12, 18, 0.78)';
+  ctx.fillRect(0, 0, w, h);
 
   const yTemp = (v: number) =>
     pad.top + ((opts.tempMax - v) / (opts.tempMax - opts.tempMin)) * plotH;

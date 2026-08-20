@@ -6,6 +6,7 @@ import { StopButton } from './components/StopButton';
 import { TimingDiagram } from './components/TimingDiagram';
 import { StageProgress } from './components/StageProgress';
 import { ActuatorPanel } from './components/ActuatorPanel';
+import { ThemeToggle } from './components/ThemeToggle';
 import { useTelemetry } from './store/telemetry';
 import { connectTelemetry } from './ws/connection';
 import { api } from './api/client';
@@ -46,6 +47,7 @@ export function App() {
         </div>
 
         <div className="header-actions">
+          <ThemeToggle />
           <div className="view-toggle" aria-label="Modo de exibição">
             <button
               className={`view-btn${view === 'MONITOR' ? ' active' : ''}`}
