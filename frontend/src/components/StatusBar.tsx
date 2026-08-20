@@ -20,6 +20,7 @@ export function StatusBar({ connected }: { connected: boolean }) {
   const isSafe = latest.state === 'SAFE';
   const hasError = latest.error_code !== 0;
   const disconnected = !connected;
+  const running = ['T0_DERIV', 'T1_STAB', 'T2_RAMPA', 'T3_PURGA'].includes(latest.state);
 
   return (
     <header className="status-bar">
@@ -52,6 +53,10 @@ export function StatusBar({ connected }: { connected: boolean }) {
           {disconnected ? '⚠ comunicação perdida' : `⚠ erro DAQ (${latest.error_code})`}
         </span>
       )}
+      <span className={`stage-flash${running ? ' blink' : ''}`} aria-label="Etapa em execução">
+        <span className="stage-flash-mark">{running ? '▶' : '▪'}</span>
+        {stateLabel}
+      </span>
     </header>
   );
 }

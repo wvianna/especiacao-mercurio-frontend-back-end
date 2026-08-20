@@ -3,35 +3,40 @@ import { useTelemetry } from '../store/telemetry';
 import type { Sample } from '../store/telemetry';
 
 const COLORS = {
-  t1: '#35d0e0',
-  t1Sp: 'rgba(53, 208, 224, 0.45)',
-  t2: '#ff8c42',
-  t2Sp: 'rgba(255, 140, 66, 0.45)',
-  rate: '#c792ea',
-  pwmU: '#ffd166',
-  pwmF2: '#ff5c5c',
+  temp1: '#2fd6e8', // T1 (Forno 1)
+  temp2: '#ff8c42', // T2 (Forno 2)
+  setpoint: 'rgba(220, 232, 242, 0.65)',
+  pwm: '#ff5c5c',
   grid: 'rgba(120, 150, 180, 0.12)',
-  axis: 'rgba(160, 190, 215, 0.5)',
-  label: '#7f9bb5',
+  axis: 'rgba(160, 190, 215, 0.55)',
+  label: '#7d98b2',
 };
 
-interface SeriesOpts {
-  label: string;
-  color: string;
-  values: (s: Sample) => number;
+interface ChartOpts {
+  title: string;
+  tempColor: string;
+  spColor: string;
+  pwmColor: string;
+  temp: (s: Sample) => number; // °C
+  setpoint: (s: Sample) => number; // °C
+  pwm: (s: Sample) => number; // % (0–100)
+  tempMin: number;
+  tempMax: number;
+  labels: { temp: string; setpoint: string; pwm: string };
 }
 
+/**
+ * Desenha um gráfico com eixo esquerdo (°C — temperatura/setpoint) e
+ * eixo direito (% — PWM), com legenda das três curvas.
+ */
 function drawChart(
   ctx: CanvasRenderingContext2D,
   w: number,
   h: number,
-  title: string,
-  series: SeriesOpts[],
+  opts: ChartOpts,
   samples: Sample[],
-  yMin: number,
-  yMax: number,
-  pad = { top: 16, right: 8, bottom: 18, left: 42 },
 ) {
+  const pad = { top: 18, bottom: 22, left: 52, right: 52 };
   const plotW = w - pad.left - pad.right;
   const plotH = h - pad.top - pad.bottom;
 
@@ -41,67 +46,104 @@ function drawChart(
   ctx.fillStyle = COLORS.label;
   ctx.font = '600 11px "JetBrains Mono", monospace';
   ctx.textBaseline = 'top';
-  ctx.fillText(title.toUpperCase(), pad.left, 2);
+  ctx.fillText(opts.title.toUpperCase(), pad.left, 2);
 
   // fundo
   ctx.fillStyle = 'rgba(8, 12, 18, 0.6)';
   ctx.fillRect(pad.left, pad.top, plotW, plotH);
 
-  // grade horizontal
-  ctx.strokeStyle = COLORS.grid;
-  ctx.lineWidth = 1;
+  const yTemp = (v: number) =>
+    pad.top + ((opts.tempMax - v) / (opts.tempMax - opts.tempMin)) * plotH;
+  const yPct = (p: number) => pad.top + ((100 - p) / 100) * plotH;
+
+  // grade + eixo esquerdo (temperatura °C)
+  ctx.font = '400 9px "JetBrains Mono", monospace';
+  ctx.textBaseline = 'middle';
   for (let i = 0; i <= 4; i++) {
     const y = pad.top + (plotH / 4) * i;
+    ctx.strokeStyle = COLORS.grid;
+    ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(pad.left, y);
     ctx.lineTo(pad.left + plotW, y);
     ctx.stroke();
-    const val = yMax - ((yMax - yMin) * i) / 4;
+    const val = opts.tempMax - ((opts.tempMax - opts.tempMin) * i) / 4;
     ctx.fillStyle = COLORS.axis;
-    ctx.font = '400 9px "JetBrains Mono", monospace';
-    ctx.textBaseline = 'middle';
     ctx.textAlign = 'right';
-    ctx.fillText(val.toFixed(yMax - yMin < 20 ? 1 : 0), pad.left - 4, y);
+    ctx.fillText(`${val.toFixed(0)} °C`, pad.left - 6, y);
+  }
+
+  // eixo direito (PWM %)
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.top + (plotH / 4) * i;
+    const p = 100 - (100 * i) / 4;
+    ctx.fillStyle = COLORS.axis;
     ctx.textAlign = 'left';
+    ctx.fillText(`${p.toFixed(0)} %`, pad.left + plotW + 6, y);
   }
 
   const n = samples.length;
   if (n < 2) return;
-
   const x = (i: number) => pad.left + (i / (n - 1)) * plotW;
-  const y = (v: number) => pad.top + ((yMax - v) / (yMax - yMin)) * plotH;
 
-  for (const s of series) {
-    ctx.strokeStyle = s.color;
-    ctx.lineWidth = 1.6;
+  const plot = (
+    values: (s: Sample) => number,
+    yFn: (v: number) => number,
+    color: string,
+    dash: number[] = [],
+    width = 1.5,
+  ) => {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
+    ctx.setLineDash(dash);
     ctx.beginPath();
     let started = false;
     for (let i = 0; i < n; i++) {
-      const v = s.values(samples[i]);
+      const v = values(samples[i]);
       if (!Number.isFinite(v)) continue;
       if (!started) {
-        ctx.moveTo(x(i), y(v));
+        ctx.moveTo(x(i), yFn(v));
         started = true;
       } else {
-        ctx.lineTo(x(i), y(v));
+        ctx.lineTo(x(i), yFn(v));
       }
     }
     ctx.stroke();
-  }
+    ctx.setLineDash([]);
+  };
+
+  // setpoint (°C, tracejado) → temperatura (°C) → pwm (%, eixo direito)
+  plot(opts.setpoint, yTemp, opts.spColor, [4, 3], 1.2);
+  plot(opts.temp, yTemp, opts.tempColor, [], 1.6);
+  plot(opts.pwm, yPct, opts.pwmColor, [], 1.6);
 
   // legenda
-  let lx = pad.left + 4;
+  let lx = pad.left;
   ctx.font = '400 9px "JetBrains Mono", monospace';
   ctx.textBaseline = 'middle';
-  for (const s of series) {
-    const label = `${s.label}`;
-    ctx.fillStyle = s.color;
-    const tw = ctx.measureText(label).width;
-    ctx.fillText(label, lx, h - 8);
-    lx += tw + 12;
+  const legend = [
+    { color: opts.tempColor, label: opts.labels.temp, dash: false },
+    { color: opts.spColor, label: opts.labels.setpoint, dash: true },
+    { color: opts.pwmColor, label: opts.labels.pwm, dash: false },
+  ];
+  for (const it of legend) {
+    ctx.strokeStyle = it.color;
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash(it.dash ? [4, 3] : []);
+    ctx.beginPath();
+    ctx.moveTo(lx, h - 10);
+    ctx.lineTo(lx + 14, h - 10);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    lx += 18;
+    ctx.fillStyle = it.color;
+    const tw = ctx.measureText(it.label).width;
+    ctx.fillText(it.label, lx, h - 10);
+    lx += tw + 16;
   }
 }
 
+/** Gráficos de tendência por forno (temperatura/setpoint °C × PWM %). */
 export function TrendChart() {
   const ref = useRef<HTMLCanvasElement>(null);
   const samples = useTelemetry((s) => s.buffer);
@@ -123,48 +165,49 @@ export function TrendChart() {
       }
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      const third = h / 3;
+      const gap = 16;
+      const chartH = (h - gap) / 2;
 
       drawChart(
         ctx,
         w,
-        third,
-        'Temperatura — VP × SP (°C)',
-        [
-          { label: 'T1 VP', color: COLORS.t1, values: (s) => s.t1 },
-          { label: 'T1 SP', color: COLORS.t1Sp, values: (s) => s.spU },
-          { label: 'T2 VP', color: COLORS.t2, values: (s) => s.t2 },
-          { label: 'T2 SP', color: COLORS.t2Sp, values: (s) => s.spF2 },
-        ],
+        chartH,
+        {
+          title: 'Forno 1 · Tubo U',
+          tempColor: COLORS.temp1,
+          spColor: COLORS.setpoint,
+          pwmColor: COLORS.pwm,
+          temp: (s) => s.t1,
+          setpoint: (s) => s.spU,
+          pwm: (s) => (s.pwmU / 255) * 100,
+          tempMin: -80,
+          tempMax: 280,
+          labels: { temp: 'T1 °C', setpoint: 'SP °C', pwm: 'PWM %' },
+        },
         samples,
-        -60,
-        760,
       );
 
+      ctx.save();
+      ctx.translate(0, chartH + gap);
       drawChart(
         ctx,
         w,
-        third,
-        'Coeficiente de Aquecimento (°C/s)',
-        [{ label: 'taxa', color: COLORS.rate, values: (s) => s.rate }],
+        chartH,
+        {
+          title: 'Forno 2 · Atomizador',
+          tempColor: COLORS.temp2,
+          spColor: COLORS.setpoint,
+          pwmColor: COLORS.pwm,
+          temp: (s) => s.t2,
+          setpoint: (s) => s.spF2,
+          pwm: (s) => (s.pwmF2 / 255) * 100,
+          tempMin: -20,
+          tempMax: 820,
+          labels: { temp: 'T2 °C', setpoint: 'SP °C', pwm: 'PWM %' },
+        },
         samples,
-        0,
-        1,
       );
-
-      drawChart(
-        ctx,
-        w,
-        third,
-        'PWM — Resistências (0–255)',
-        [
-          { label: 'forno1', color: COLORS.pwmU, values: (s) => s.pwmU },
-          { label: 'forno2', color: COLORS.pwmF2, values: (s) => s.pwmF2 },
-        ],
-        samples,
-        0,
-        255,
-      );
+      ctx.restore();
 
       raf = requestAnimationFrame(render);
     };
@@ -175,8 +218,10 @@ export function TrendChart() {
   return (
     <div className="panel trend-panel">
       <div className="panel-head">
-        <h2>Gráficos de Tendência</h2>
-        <span className="panel-sub">{samples.length} amostras</span>
+        <h2>Gráficos de Tendência — Fornos</h2>
+        <span className="panel-sub">
+          {samples.length} amostras · eixo esq. °C · eixo dir. %
+        </span>
       </div>
       <canvas ref={ref} className="trend-canvas" />
     </div>

@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { StatusBar } from './components/StatusBar';
-import { Synoptic } from './components/Synoptic';
 import { TrendChart } from './components/TrendChart';
 import { ManualPanel } from './components/ManualPanel';
 import { ConfigPanel } from './components/ConfigPanel';
@@ -8,7 +7,6 @@ import { StopButton } from './components/StopButton';
 import { TimingDiagram } from './components/TimingDiagram';
 import { StageProgress } from './components/StageProgress';
 import { ValvePanel } from './components/ValvePanel';
-import { PumpWidget } from './components/PumpWidget';
 import { useTelemetry } from './store/telemetry';
 import { connectTelemetry } from './ws/connection';
 import { api } from './api/client';
@@ -117,14 +115,12 @@ function MonitorView({ manualMode }: { manualMode: boolean }) {
       </section>
 
       <section className="widget-strip">
-        <PumpWidget />
         <StageProgress />
         <ValvePanel enabled={manualMode} />
       </section>
 
       <section className="grid">
         <div className="col-main">
-          <Synoptic />
           <TrendChart />
         </div>
         <aside className="col-side">

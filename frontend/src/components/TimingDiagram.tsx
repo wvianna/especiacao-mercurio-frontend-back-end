@@ -67,6 +67,15 @@ function matrixValue(key: string, stage: StageId): 0 | 1 {
   return (row as Record<string, 0 | 1>)[key] ?? 0;
 }
 
+/** Estado ATUAL (telemetria) de um dispositivo: true = ligado. */
+function deviceOn(t: Telemetry | null, key: string): boolean {
+  if (!t) return false;
+  if (key === 'pump') return Boolean(t.pump);
+  if (key === 'heatU') return (t.pwm?.u ?? 0) > 0;
+  if (key === 'heatF2') return (t.pwm?.f2 ?? 0) > 0;
+  return Boolean(t.valves?.[key]);
+}
+
 /**
  * Diagrama de Tempos (Gantt): faixas T0–T3 (set-points), linhas de atuadores
  * e cursor de progresso real ("actual") com rótulo da etapa vigente.
@@ -92,15 +101,27 @@ export function TimingDiagram() {
         </div>
       </div>
       <svg viewBox={`0 0 ${W} ${H}`} className="timing-svg" role="img" aria-label="Diagrama de tempos do ciclo">
-        {/* coluna de rótulos */}
-        {ACTUATOR_ROWS.map((r, i) => (
-          <g key={r.key}>
-            <text x={LABEL_W - 8} y={HEADER_H + i * ROW_H + ROW_H / 2 + 4} textAnchor="end" className={`tl-rowlabel tl-${r.kind}`}>
-              {r.label}
-            </text>
-            <rect x={4} y={HEADER_H + i * ROW_H + 4} width={4} height={ROW_H - 8} className={`tl-sw-${r.kind}`} />
-          </g>
-        ))}
+        {/* coluna de rótulos + LED de status (vermelho = ligado, cinza = desligado) */}
+        {ACTUATOR_ROWS.map((r, i) => {
+          const y = HEADER_H + i * ROW_H;
+          const ledOn = deviceOn(t, r.key);
+          return (
+            <g key={r.key}>
+              <text x={LABEL_W - 16} y={y + ROW_H / 2 + 4} textAnchor="end" className={`tl-rowlabel tl-${r.kind}`}>
+                {r.label}
+              </text>
+              <rect
+                x={LABEL_W - 12}
+                y={y + ROW_H / 2 - 4}
+                width={8}
+                height={8}
+                rx={2}
+                className={`tl-led${ledOn ? ' is-on' : ''}`}
+              />
+              <rect x={4} y={y + 4} width={4} height={ROW_H - 8} className={`tl-sw-${r.kind}`} />
+            </g>
+          );
+        })}
 
         {/* faixas de etapa (set-points de duração) */}
         {slices.map((s, i) => (
