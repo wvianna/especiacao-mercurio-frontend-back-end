@@ -36,16 +36,21 @@ graph LR
   - `config_store.py` — persistência atômica de parâmetros com backup rotativo.
   - `api.py` / `main.py` — API REST + WebSocket e fábrica da aplicação.
 - **Firmware (`firmware/`)**
-  - `src/pin_map.h` — mapa de I/O e Safe State.
-  - `src/actuator_driver.*` — aplica válvulas/bomba/PWM.
+  - `src/pin_map.h` — mapa de I/O, Safe State e `PUMP_PULSE_MS`.
+  - `src/actuator_driver.*` — aplica válvulas/PWM e o **pulso de toggle da bomba**.
   - `src/thermocouple_reader.*` — leitura SPI dos termopares (MAX31855).
-  - `lib/daqcore/` — parser JSON e watchdog (portáveis, testáveis em host).
+  - `lib/daqcore/` — parser JSON, watchdog e `pump_toggle` (portáveis, testáveis em host).
 - **Frontend (`frontend/src/`)**
-  - `App.tsx` — layout, seletor AUTO/MANUAL e integração WS.
+  - `App.tsx` — layout com modos MONITOR/CONFIG, seletor AUTO/MANUAL e integração WS.
+  - `components/TimingDiagram.tsx` — Diagrama de Tempos (Gantt SVG): faixas T₀–T₃ com "set-point vs. actual" e cursor de progresso.
+  - `components/StageProgress.tsx` — barra de progresso da etapa com contagem regressiva para a próxima transição.
+  - `components/ValvePanel.tsx` — status dinâmico dos atuadores (verde = ON, cinza = OFF).
+  - `components/PumpWidget.tsx` — widget crítico da Bomba Peristáltica (injeção de TEBS).
   - `components/Synoptic.tsx` — fluxograma com fase atual e leituras.
   - `components/TrendChart.tsx` — gráficos VP×SP, °C/s e PWM (canvas).
   - `components/ManualPanel.tsx` — controles manuais (habilitados no modo manual).
-  - `components/ConfigPanel.tsx` — parâmetros com LER/ESCREVER.
+  - `components/ConfigPanel.tsx` — Set-Point Configuration Mode (LER / SALVAR CONFIGURAÇÕES) com resumo das etapas.
+  - `lib/stages.ts` — metadados das etapas e matriz de atuadores (fonte única p/ Gantt, válvulas e progresso).
 
 **Fluxo típico (ciclo a 250 ms):**
 
@@ -144,9 +149,21 @@ pio run -e uno -t upload  # grava no Arduino (via USB)
   "state": "T2_RAMPA",
   "valves": { "sv1": 1, "sv2": 0, "sv3": 0, "sv4": 0, "sv5": 1 },
   "pump": 1,
-  "error_code": 0
+  "error_code": 0,
+  "stage": { "id": "T2_RAMPA", "index": 2, "elapsed": 120.5, "total": 300.0, "progress": 0.40 },
+  "cycle": { "elapsed": 432.5, "total": 780.0, "progress": 0.55 },
+  "stages": [
+    { "id": "T0_DERIV", "duration": 60.0 },
+    { "id": "T1_STAB",  "duration": 360.0 },
+    { "id": "T2_RAMPA", "duration": 300.0 },
+    { "id": "T3_PURGA", "duration": 60.0 }
+  ]
 }
 ```
+
+> `stage`/`cycle` alimentam o Diagrama de Tempos e a barra de progresso da IHM.
+> No estado **SAFE**, `cycle.total` é `0` e `stage.index` é `-1`; as durações de
+> cada etapa permanecem disponíveis em `stages` (set-points planejados).
 
 ### Estados possíveis (`state`)
 
@@ -156,7 +173,7 @@ pio run -e uno -t upload  # grava no Arduino (via USB)
 
 | Componente            | Pino | Tipo    | Função                        |
 | --------------------- | ---- | ------- | ----------------------------- |
-| Bomba Peristáltica    | 2    | Digital | Injeção de TEBS               |
+| Bomba Peristáltica    | 2    | Digital | Injeção de TEBS (toggle por pulso) |
 | SV3                   | 3    | Digital | Direcionamento Vapor/Tubo U   |
 | SV2                   | 4    | Digital | Agitação / Purga 1            |
 | SV4                   | 5    | Digital | Purga 2 (Náfion)              |
@@ -180,6 +197,13 @@ pio run -e uno -t upload  # grava no Arduino (via USB)
 | T₂   | 1   | 0   | 0   | 0   | 0   | 0     |
 | T₃   | 0   | 1   | 1   | 1   | 0   | 0     |
 | SAFE | 0   | 0   | 0   | 0   | 0   | 0     |
+
+> [!NOTE] **Bomba por pulso (toggle)**
+> A Bomba Peristáltica é um dispositivo de trava: cada pulso (nível alto →
+> baixo) de `PUMP_PULSE_MS` (600 ms) **alterna** ligado/desligado. O mestre
+> envia apenas o estado lógico (`pump` 0/1); o firmware (`lib/daqcore/pump_toggle.*`)
+> detecta a transição de estado e emite o pulso. Nas transições T₀→T₁ (e
+> vice-versa) a bomba é acionada/desligada automaticamente por esse pulso.
 
 **Mapeamento de durações** (decisão registrada em `.specs/project/STATE.md`):
 

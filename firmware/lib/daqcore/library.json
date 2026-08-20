@@ -1,7 +1,7 @@
 {
   "name": "daqcore",
   "version": "0.1.0",
-  "description": "Núcleo portável do DAQ: protocolo JSON e watchdog",
+  "description": "Núcleo portável do DAQ: protocolo JSON, watchdog e toggle da bomba",
   "frameworks": "*",
   "platforms": "*"
 }

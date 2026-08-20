@@ -1,0 +1,65 @@
+Plano de Desenvolvimento: Refatoração e Integração do Sistema de Controle Temporal (Módulo DAC)
+
+1. Contexto Estratégico e Objetivos da Refatoração
+
+A transição do acionamento manual para um sistema de controle temporal automatizado é imperativa para garantir o determinismo de processo e a redução de jitter operacional. Em ambientes industriais de precisão, a dependência da intervenção humana introduz variabilidades inaceitáveis. Esta refatoração visa integrar a lógica de software ao Módulo DAC (já implementado), transformando o sistema em uma plataforma de execução coordenada. A transição para o controle automático não apenas assegura a repetibilidade milimétrica dos ciclos, mas estabelece a base para a confiabilidade sistêmica e integridade física dos ativos.
+
+Os objetivos centrais deste projeto de engenharia são:
+
+* Automação de Etapas (Determinismo): Execução sequencial autônoma dos intervalos T0 a T4, eliminando atrasos de latência humana.
+* Persistência de Estado: Garantia de que os set-points operacionais sobrevivam a ciclos de power-cycle (reboot), mantendo a continuidade do setup.
+* Observabilidade Avançada (Feedback Visual): Implementação de uma interface de monitoramento em tempo real que reduza a carga cognitiva do operador e previna erros de interpretação.
+
+Esta base estratégica orienta as especificações técnicas de backend e a lógica de acionamento de baixo nível detalhadas a seguir.
+
+2. Parte 1: Engenharia de Backend e Lógica de Acionamento por Etapas
+
+A lógica de controle temporal opera como o núcleo de processamento do sistema. A segmentação em etapas discretas (T0 a T4) permite que o backend coordene ações físicas através do Módulo DAC com precisão de tempo real. O gatilho inicial (Process Trigger) ocorre no momento do acionamento do botão "Iniciar" na interface, definindo o evento T0.
+
+Abaixo, a Matriz de Acionamento define os estados lógicos dos dispositivos:
+
+Intervalo	Evento de Controle	Dispositivos Ativos (ON)	Dispositivos Inativos (OFF)
+Intervalo T0-T1	Start Trigger (T0)	SV1, SV5, Bomba	SV2, SV3, SV4
+Intervalo T1-T2	Transição T1	SV5	SV1, SV2, SV3, SV4, Bomba
+Intervalo T2-T3	Transição T2	SV1	SV2, SV3, SV4, SV5, Bomba
+Intervalo T3-T4	Transição T3	SV2, SV3, SV4	SV1, SV5, Bomba
+
+Segurança de Hardware e Interlocking Logic: Para proteger a integridade do Arduino Uno e dos periféricos de potência, o backend deve implementar um Software Interlock. Esta lógica garante que, durante cada transição de etapa, todos os pinos não explicitamente declarados como "ON" na matriz sejam forçados ao estado "LOW". Isso previne surtos elétricos por acionamentos indevidos e mitiga o efeito de "golpe de aríete" (hydraulic hammer) nas tubulações, garantindo que a Bomba e as válvulas SV operem estritamente dentro dos envelopes de segurança.
+
+3. Integração com o Módulo DAC (Contrato Arduino Uno)
+
+O Módulo DAC atua como a camada de abstração de hardware (HAL). A integração deve respeitar o contrato de comunicação serial/I2C pré-existente do Arduino Uno. O serviço de backend atuará como um Wrapper/Controller para a biblioteca DAC, empacotando os estados da matriz em comandos atômicos.
+
+Requisitos de Comunicação:
+
+* Estrutura de Payload: O backend deve enviar o estado dos 6 dispositivos (SV1-SV5 + Bomba) preferencialmente via bitmask de 6 bits ou JSON serializado, garantindo que todos os dispositivos transitem de estado simultaneamente no mesmo ciclo de clock do controlador.
+* Mapeamento de I/O:
+  * Bit 0: SV1 | Bit 1: SV2 | Bit 2: SV3 | Bit 3: SV4 | Bit 4: SV5 | Bit 5: Bomba.
+* Sincronização: O sinal de saída deve ser um reflexo fiel da Matriz de Acionamento, com tratamento de exceção para casos de falha de comunicação com o periférico DAC.
+
+4. Parte 2: Interface Web e Experiência do Usuário (Frontend)
+
+A interface deixa de ser apenas um formulário para se tornar um Painel de Monitoramento Crítico. O frontend deve operar em dois modos distintos: Set-Point Configuration Mode (para ajuste dos tempos) e Execution Monitor Mode (para acompanhamento do processo).
+
+O componente central será o Diagrama de Tempos (Gantt-style), desenvolvido via SVG ou Canvas para garantir reatividade.
+
+Elementos Visuais Obrigatórios:
+
+* Diagrama de Tempos: Visualização das faixas temporais T1, T2, T3 e T4 com indicadores de "Set-point vs. Actual".
+* Status Dinâmico de Válvulas: Indicadores cromáticos de estado (Ex: Verde para ON, Cinza para OFF).
+* Indicador Crítico da Bomba: Widget de destaque para monitoramento do acionamento do motor.
+* Barra de Progresso de Etapa: Feedback visual da contagem regressiva para a próxima transição.
+
+Impacto Operacional: A visualização reativa permite ao operador prever a próxima fase com precisão, permitindo intervenções proativas caso o comportamento físico do sistema (vazão/pressão) divirja do diagrama de tempos configurado.
+
+5. Persistência de Dados e Resiliência do Sistema
+
+Para elevar o sistema ao nível industrial, é necessária uma estratégia de State-Machine Persistence. A perda de parâmetros T1-T4 após um desligamento acidental é um risco operacional crítico que pode comprometer lotes de produção.
+
+Estratégia de Persistência:
+
+* Armazenamento Não-Volátil: Os valores T1 a T4 devem ser persistidos em um banco de dados leve (SQLite) ou arquivo de configuração local (config.json) no host que gerencia o backend.
+* Sincronização de Boot: No evento de inicialização (Power-on), o sistema deve obrigatoriamente executar um Fetch da última configuração válida ("Last Known Good State").
+* Atomicidade: O salvamento deve ser acionado explicitamente pelo usuário através de um botão "Salvar Configurações", validando os dados antes da escrita para evitar corrupção de parâmetros.
+
+A convergência entre um backend com interlock de segurança, a persistência robusta de dados e uma interface de monitoramento determinística entrega uma solução de automação industrial resiliente e pronta para operação contínua.

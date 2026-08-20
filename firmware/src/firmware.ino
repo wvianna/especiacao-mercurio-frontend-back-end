@@ -46,6 +46,9 @@ void loop() {
     actuator.shutdown();
   }
 
+  // --- Bomba por pulso: completa o toggle (HIGH -> LOW) em PUMP_PULSE_MS ---
+  actuator.update();
+
   // --- Ciclo de aquisição a 250 ms (4 Hz) ---
   unsigned long now = millis();
   if (now - last_cycle >= 250) {

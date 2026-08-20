@@ -107,6 +107,10 @@ class ControlLoop:
                 if self.last_report is None
                 else self.last_report.get("error_code", 0)
             ),
+            # suporte ao Diagrama de Tempos / barra de progresso da IHM
+            "stage": fsm.stage_progress(),
+            "cycle": fsm.cycle_progress(),
+            "stages": fsm.stage_durations(),
         }
         with self._lock:
             self.latest_telemetry = telemetry

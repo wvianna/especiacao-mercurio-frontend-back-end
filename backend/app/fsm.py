@@ -52,6 +52,7 @@ class StateMachine:
             params.pid_f2.kp, params.pid_f2.ti, params.pid_f2.td
         )
         self.phase_elapsed = 0.0
+        self.cycle_elapsed = 0.0
         self.ramp_elapsed = 0.0
         self.emergency = False
         self.manual_state = {
@@ -103,6 +104,7 @@ class StateMachine:
             return
 
         self.phase_elapsed += dt
+        self.cycle_elapsed += dt
         sp_f2 = self.params.setpoints.get("f2_c", 700.0)
 
         if self.state == State.T0:
@@ -134,10 +136,62 @@ class StateMachine:
     def _enter(self, state: State) -> None:
         self.state = state
         self.phase_elapsed = 0.0
+        if state == State.T0:
+            self.cycle_elapsed = 0.0
         if state == State.T2:
             self.ramp_elapsed = 0.0
             self.ramp.pid.reset()
         self._actuators = self._build_actuators(state)
+
+    # ------------------------------------------------------------------ IHM
+    def stage_progress(self) -> dict:
+        """Progresso da etapa atual (consome o Diagrama de Tempos da IHM)."""
+        order = [State.T0, State.T1, State.T2, State.T3]
+        if self.state in order:
+            idx = order.index(self.state)
+            total = self._duration_of(self.state)
+            elapsed = min(self.phase_elapsed, total)
+            return {
+                "id": self.state.value,
+                "index": idx,
+                "elapsed": round(elapsed, 3),
+                "total": round(total, 3),
+                "progress": round(elapsed / total if total else 0.0, 4),
+            }
+        return {
+            "id": self.state.value,
+            "index": -1,
+            "elapsed": 0.0,
+            "total": 0.0,
+            "progress": 0.0,
+        }
+
+    def cycle_progress(self) -> dict:
+        """Progresso geral do ciclo T0→T3 (soma das durações)."""
+        if self.state not in (State.T0, State.T1, State.T2, State.T3):
+            return {"elapsed": 0.0, "total": 0.0, "progress": 0.0}
+        total = sum(self._duration_of(s) for s in (State.T0, State.T1, State.T2, State.T3))
+        elapsed = min(self.cycle_elapsed, total)
+        return {
+            "elapsed": round(elapsed, 3),
+            "total": round(total, 3),
+            "progress": round(elapsed / total if total else 0.0, 4),
+        }
+
+    def stage_durations(self) -> list[dict]:
+        """Durações das etapas (set-points do Diagrama de Tempos)."""
+        return [
+            {"id": State.T0.value, "duration": self._duration_of(State.T0)},
+            {"id": State.T1.value, "duration": self._duration_of(State.T1)},
+            {"id": State.T2.value, "duration": self._duration_of(State.T2)},
+            {"id": State.T3.value, "duration": self._duration_of(State.T3)},
+        ]
+
+    def _duration_of(self, state: State) -> float:
+        key = PHASE_TIME_KEY[state]
+        if key == "ramp":
+            return self.params.ramp.time_s
+        return self.params.times_s[key]
 
     def _build_actuators(self, state: State) -> dict:
         if state == State.MANUAL:

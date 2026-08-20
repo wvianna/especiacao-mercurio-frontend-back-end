@@ -13,6 +13,14 @@ function sample(n: number): Telemetry {
     valves: { sv1: 1, sv2: 0, sv3: 0, sv4: 0, sv5: 0 },
     pump: 0,
     error_code: 0,
+    stage: { id: 'T2_RAMPA', index: 2, elapsed: 12, total: 300, progress: 0.04 },
+    cycle: { elapsed: 432, total: 780, progress: 0.55 },
+    stages: [
+      { id: 'T0_DERIV', duration: 60 },
+      { id: 'T1_STAB', duration: 360 },
+      { id: 'T2_RAMPA', duration: 300 },
+      { id: 'T3_PURGA', duration: 60 },
+    ],
   };
 }
 

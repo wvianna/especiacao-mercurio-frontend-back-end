@@ -2,6 +2,7 @@
 #include <string.h>
 #include <json_protocol.h>
 #include <watchdog.h>
+#include <pump_toggle.h>
 
 // ---------------------------------------------------------------------------
 // parseIncoming
@@ -106,6 +107,83 @@ void test_watchdog_timeout_configurable(void) {
   TEST_ASSERT_TRUE(wd.tripped());
 }
 
+// ---------------------------------------------------------------------------
+// PumpToggle (bomba peristáltica — acionamento por pulso)
+// ---------------------------------------------------------------------------
+
+void test_pump_toggle_pulses_on_on_transition(void) {
+  PumpToggle pump(600);
+  pump.setNow(fake_now_fn);
+  fake_now = 100;
+  // OFF -> ON: deve iniciar o pulso
+  TEST_ASSERT_TRUE(pump.update(true));
+  TEST_ASSERT_TRUE(pump.pulsing());
+  // Sem transição, ainda dentro da janela: pulso continua
+  fake_now = 500;
+  TEST_ASSERT_FALSE(pump.update(true));
+  TEST_ASSERT_TRUE(pump.pulsing());
+}
+
+void test_pump_toggle_ends_pulse_after_timeout(void) {
+  PumpToggle pump(600);
+  pump.setNow(fake_now_fn);
+  fake_now = 0;
+  pump.update(true);  // inicia o pulso
+  fake_now = 599;
+  pump.update(true);
+  TEST_ASSERT_TRUE(pump.pulsing());
+  fake_now = 601;
+  pump.update(true);
+  TEST_ASSERT_FALSE(pump.pulsing());  // pulso concluído (toggle ligado)
+}
+
+void test_pump_toggle_pulses_on_off_transition(void) {
+  PumpToggle pump(600);
+  pump.setNow(fake_now_fn);
+  fake_now = 0;
+  pump.update(true);
+  fake_now = 600;
+  pump.update(true);
+  TEST_ASSERT_FALSE(pump.pulsing());
+  // ON -> OFF: novo pulso de toggle (desligar)
+  fake_now = 700;
+  TEST_ASSERT_TRUE(pump.update(false));
+  TEST_ASSERT_TRUE(pump.pulsing());
+  TEST_ASSERT_FALSE(pump.desired());
+}
+
+void test_pump_toggle_restarts_pulse_on_rapid_transition(void) {
+  PumpToggle pump(600);
+  pump.setNow(fake_now_fn);
+  fake_now = 0;
+  pump.update(true);
+  // Nova transição antes de terminar: reinicia o pulso
+  fake_now = 300;
+  TEST_ASSERT_TRUE(pump.update(false));
+  TEST_ASSERT_TRUE(pump.pulsing());
+  fake_now = 899;  // 599 ms após o reinício
+  pump.update(false);
+  TEST_ASSERT_TRUE(pump.pulsing());
+  fake_now = 901;
+  pump.update(false);
+  TEST_ASSERT_FALSE(pump.pulsing());
+}
+
+void test_pump_toggle_reset(void) {
+  PumpToggle pump(600);
+  pump.setNow(fake_now_fn);
+  fake_now = 0;
+  pump.update(true);
+  TEST_ASSERT_TRUE(pump.pulsing());
+  pump.reset();
+  TEST_ASSERT_FALSE(pump.pulsing());
+  TEST_ASSERT_FALSE(pump.desired());
+  // Após reset, nova transição gera novo pulso
+  fake_now = 50;
+  TEST_ASSERT_TRUE(pump.update(true));
+  TEST_ASSERT_TRUE(pump.pulsing());
+}
+
 int main(int argc, char** argv) {
   (void)argc;
   (void)argv;
@@ -119,5 +197,10 @@ int main(int argc, char** argv) {
   RUN_TEST(test_watchdog_trips_after_timeout);
   RUN_TEST(test_watchdog_resets_on_feed);
   RUN_TEST(test_watchdog_timeout_configurable);
+  RUN_TEST(test_pump_toggle_pulses_on_on_transition);
+  RUN_TEST(test_pump_toggle_ends_pulse_after_timeout);
+  RUN_TEST(test_pump_toggle_pulses_on_off_transition);
+  RUN_TEST(test_pump_toggle_restarts_pulse_on_rapid_transition);
+  RUN_TEST(test_pump_toggle_reset);
   return UNITY_END();
 }

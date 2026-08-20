@@ -19,6 +19,12 @@
 
 #define PWM_MAX 255
 
+// Bomba peristáltica: dispositivo de trava por pulso (toggle).
+// Um pulso de PUMP_PULSE_MS (nível alto -> baixo) alterna o estado
+// ligado/desligado. O mestre envia apenas o estado lógico desejado
+// (pump 0/1); o firmware gera o pulso nas transições.
+#define PUMP_PULSE_MS 600
+
 // Safe State: válvulas/bomba desligadas, fornos a 0%, SV5 (pistão) em nível baixo.
 inline void safeState() {
   digitalWrite(PIN_SV1, LOW);

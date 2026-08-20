@@ -105,3 +105,38 @@ def test_t2_drives_ramp_pwm():
     # em T2, abaixo de 0°C, pwm_u > 0 (razão de taxas)
     fsm.tick(0.25, t1=-45.0, t2=699.0)
     assert fsm.command_payload()["pwm"]["u"] > 0
+
+
+def test_stage_progress_reports_elapsed_and_total():
+    fsm = StateMachine(make_params())  # durações de 1 s em todas as etapas
+    assert fsm.stage_progress()["index"] == -1
+    assert fsm.cycle_progress()["total"] == 0.0
+    fsm.handle_event(Event.START)
+    assert fsm.state == State.T0
+    p = fsm.stage_progress()
+    assert p["index"] == 0
+    assert p["total"] == 1.0
+    assert p["elapsed"] == 0.0
+    fsm.tick(0.25, t1=-45.0, t2=699.0)
+    p = fsm.stage_progress()
+    assert p["elapsed"] == 0.25
+    assert 0.24 < p["progress"] < 0.26
+    c = fsm.cycle_progress()
+    assert c["elapsed"] == 0.25
+    assert c["total"] == 4.0  # t1+t2+rampa+t3 = 4 s
+
+
+def test_cycle_progress_advances_across_stages():
+    fsm = StateMachine(make_params())
+    fsm.handle_event(Event.START)
+    # percorre o ciclo inteiro (4 etapas de 1 s)
+    while fsm.state != State.SAFE:
+        fsm.tick(0.5, t1=-45.0, t2=699.0)
+    # em SAFE o progresso de ciclo é zerado
+    assert fsm.cycle_progress()["elapsed"] == 0.0
+    assert fsm.stage_durations() == [
+        {"id": "T0_DERIV", "duration": 1.0},
+        {"id": "T1_STAB", "duration": 1.0},
+        {"id": "T2_RAMPA", "duration": 1.0},
+        {"id": "T3_PURGA", "duration": 1.0},
+    ]
