@@ -9,7 +9,8 @@ export function ThemeToggle() {
     <button
       className="theme-btn"
       onClick={toggle}
-      title={theme === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
+      data-tip={theme === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
+      data-tip-pos="bottom"
       aria-label="Alternar tema claro/escuro"
     >
       <span aria-hidden>{theme === 'dark' ? '☀️' : '🌙'}</span>

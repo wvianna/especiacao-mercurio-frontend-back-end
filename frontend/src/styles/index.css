@@ -192,8 +192,15 @@ body {
   display: flex;
   border: 1px solid var(--line-2);
   border-radius: 6px;
-  overflow: hidden;
   margin-right: 4px;
+}
+
+.view-toggle .view-btn:first-child {
+  border-radius: 5px 0 0 5px;
+}
+
+.view-toggle .view-btn:last-child {
+  border-radius: 0 5px 5px 0;
 }
 
 .view-btn {
@@ -227,7 +234,14 @@ body {
   display: flex;
   border: 1px solid var(--line-2);
   border-radius: 6px;
-  overflow: hidden;
+}
+
+.mode-toggle .mode-btn:first-child {
+  border-radius: 5px 0 0 5px;
+}
+
+.mode-toggle .mode-btn:last-child {
+  border-radius: 0 5px 5px 0;
 }
 
 .mode-btn {
@@ -335,6 +349,49 @@ body {
 .theme-btn:hover {
   border-color: var(--amber);
   box-shadow: 0 0 10px rgba(245, 166, 35, 0.3);
+}
+
+/* ---------------------------------------------------------- tooltips */
+[data-tip] {
+  position: relative;
+}
+
+[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 9px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 80;
+  max-width: 270px;
+  width: max-content;
+  padding: 6px 10px;
+  border: 1px solid var(--line-2);
+  border-radius: 6px;
+  background: var(--bg-2);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 10px;
+  line-height: 1.45;
+  letter-spacing: 0.02em;
+  text-align: left;
+  white-space: normal;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.15s ease, visibility 0.15s ease;
+}
+
+[data-tip]:hover::after,
+[data-tip]:focus-visible::after {
+  opacity: 1;
+  visibility: visible;
+}
+
+[data-tip-pos='bottom']::after {
+  bottom: auto;
+  top: calc(100% + 9px);
 }
 
 /* ---------------------------------------------------------- status bar */

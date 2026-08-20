@@ -44,7 +44,11 @@ export function ActuatorPanel({ enabled }: { enabled: boolean }) {
               key={r.key}
               type="button"
               className={`valve-ind ${r.kind}${on ? ' is-on' : ''}${clickable ? ' is-btn' : ''}`}
-              title={clickable ? `${r.label} — clique para alternar` : r.label}
+              data-tip={
+                clickable
+                  ? `${r.label} — clique para alternar (modo manual)`
+                  : `${r.label} — status somente leitura (modo AUTO)`
+              }
               onClick={() => clickable && toggle(r.key)}
               disabled={!clickable}
             >
@@ -57,7 +61,7 @@ export function ActuatorPanel({ enabled }: { enabled: boolean }) {
       </div>
 
       <div className="act-sliders">
-        <label>
+        <label data-tip="Ajusta a potência do Forno 1 (Tubo U), 0–255 — somente no modo manual">
           <span>VM Forno 1 (Tubo U)</span>
           <input
             type="range"
@@ -69,7 +73,7 @@ export function ActuatorPanel({ enabled }: { enabled: boolean }) {
           />
           <em>{pwm.u}</em>
         </label>
-        <label>
+        <label data-tip="Ajusta a potência do Forno 2 (Atomizador), 0–255 — somente no modo manual">
           <span>VM Forno 2 (Atomizador)</span>
           <input
             type="range"

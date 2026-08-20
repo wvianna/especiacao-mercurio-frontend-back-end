@@ -49,9 +49,9 @@ function toConfig(f: FormState): Config {
   };
 }
 
-function Field({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+function Field({ label, value, onChange, tip }: { label: string; value: string; onChange: (v: string) => void; tip: string }) {
   return (
-    <label className="cfg-field">
+    <label className="cfg-field" data-tip={tip}>
       <span>{label}</span>
       <input type="number" step="any" value={value} onChange={(e) => onChange(e.target.value)} />
     </label>
@@ -123,26 +123,26 @@ export function ConfigPanel() {
           <div className="cfg-grid">
             <fieldset>
               <legend>Tempos (s)</legend>
-              <Field label="T₁" value={form.t1} onChange={set('t1')} />
-              <Field label="T₂" value={form.t2} onChange={set('t2')} />
-              <Field label="T₃" value={form.t3} onChange={set('t3')} />
+              <Field label="T₁" value={form.t1} onChange={set('t1')} tip="Tempo da etapa T₀ (derivação/criofocalização), em segundos" />
+              <Field label="T₂" value={form.t2} onChange={set('t2')} tip="Tempo da etapa T₁ (estabilização térmica), em segundos" />
+              <Field label="T₃" value={form.t3} onChange={set('t3')} tip="Tempo da etapa T₃ (purga total), em segundos" />
             </fieldset>
             <fieldset>
               <legend>Rampa</legend>
-              <Field label="Tempo (s)" value={form.rampTime} onChange={set('rampTime')} />
-              <Field label="N₂ inicial (°C)" value={form.nitrogen} onChange={set('nitrogen')} />
-              <Field label="Alvo (°C)" value={form.target} onChange={set('target')} />
+              <Field label="Tempo (s)" value={form.rampTime} onChange={set('rampTime')} tip="Duração total da rampa de aquecimento do Tubo U (etapa T₂), em segundos" />
+              <Field label="N₂ inicial (°C)" value={form.nitrogen} onChange={set('nitrogen')} tip="Temperatura inicial do N₂ no Tubo U no início da rampa, em °C" />
+              <Field label="Alvo (°C)" value={form.target} onChange={set('target')} tip="Temperatura alvo da rampa do Tubo U, em °C" />
             </fieldset>
             <fieldset>
               <legend>PID Tubo U</legend>
-              <Field label="Kp" value={form.kpU} onChange={set('kpU')} />
-              <Field label="Ti (min)" value={form.tiU} onChange={set('tiU')} />
+              <Field label="Kp" value={form.kpU} onChange={set('kpU')} tip="Ganho proporcional Kp do PID do Tubo U" />
+              <Field label="Ti (min)" value={form.tiU} onChange={set('tiU')} tip="Constante de tempo integral Ti do PID do Tubo U, em minutos" />
             </fieldset>
             <fieldset>
               <legend>PID Forno 2</legend>
-              <Field label="Kp" value={form.kpF2} onChange={set('kpF2')} />
-              <Field label="Ti (min)" value={form.tiF2} onChange={set('tiF2')} />
-              <Field label="Setpoint (°C)" value={form.setpointF2} onChange={set('setpointF2')} />
+              <Field label="Kp" value={form.kpF2} onChange={set('kpF2')} tip="Ganho proporcional Kp do PID do Forno 2 (atomizador)" />
+              <Field label="Ti (min)" value={form.tiF2} onChange={set('tiF2')} tip="Constante de tempo integral Ti do PID do Forno 2, em minutos" />
+              <Field label="Setpoint (°C)" value={form.setpointF2} onChange={set('setpointF2')} tip="Setpoint de temperatura do Forno 2 (atomizador), em °C" />
             </fieldset>
           </div>
         </>
@@ -150,10 +150,10 @@ export function ConfigPanel() {
         <p className="cfg-loading">carregando…</p>
       )}
       <div className="cfg-actions">
-        <button className="sec-btn" onClick={() => void read()}>
+        <button className="sec-btn" onClick={() => void read()} data-tip="LER — recarregar os parâmetros persistidos do disco">
           LER
         </button>
-        <button className="sec-btn" onClick={() => void write()}>
+        <button className="sec-btn" onClick={() => void write()} data-tip="SALVAR — validar e persistir as configurações no disco (backup rotativo)">
           SALVAR CONFIGURAÇÕES
         </button>
       </div>

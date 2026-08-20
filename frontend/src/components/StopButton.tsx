@@ -23,6 +23,8 @@ export function StopButton() {
       className={`stop-btn${pressed ? ' pressed' : ''}`}
       onClick={stop}
       disabled={busy}
+      data-tip="STOP — parada de emergência de alta prioridade (desce o copo de N₂ e desliga os fornos)"
+      data-tip-pos="bottom"
       aria-label="Parada de emergência"
     >
       <span className="stop-icon">■</span>

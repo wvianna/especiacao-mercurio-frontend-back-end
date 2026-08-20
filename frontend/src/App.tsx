@@ -52,14 +52,16 @@ export function App() {
             <button
               className={`view-btn${view === 'MONITOR' ? ' active' : ''}`}
               onClick={() => setView('MONITOR')}
-              title="Execution Monitor Mode — acompanhar o processo"
+              data-tip="Modo MONITOR — acompanhar o processo em tempo real (Diagrama de Tempos, atuadores e gráficos)"
+              data-tip-pos="bottom"
             >
               MONITOR
             </button>
             <button
               className={`view-btn${view === 'CONFIG' ? ' active' : ''}`}
               onClick={() => setView('CONFIG')}
-              title="Set-Point Configuration Mode — ajustar tempos"
+              data-tip="Modo CONFIG — ajustar parâmetros e set-points do método (tempos, rampa e PID)"
+              data-tip-pos="bottom"
             >
               CONFIG
             </button>
@@ -70,6 +72,8 @@ export function App() {
               className={`mode-btn${!manualMode ? ' active' : ''}`}
               disabled={!!busy}
               onClick={() => run(() => api.setMode('auto'), 'mode')}
+              data-tip="Operação automática — executar o ciclo T₀→T₃ conforme a matriz de acionamento"
+              data-tip-pos="bottom"
             >
               AUTO
             </button>
@@ -77,6 +81,8 @@ export function App() {
               className={`mode-btn${manualMode ? ' active' : ''}`}
               disabled={!!busy}
               onClick={() => run(() => api.setMode('manual'), 'mode')}
+              data-tip="Operação manual — acionar válvulas, bomba e aquecedores diretamente"
+              data-tip-pos="bottom"
             >
               MANUAL
             </button>
@@ -86,10 +92,18 @@ export function App() {
             className="run-btn"
             disabled={!!busy || manualMode}
             onClick={() => run(api.start, 'start')}
+            data-tip="INICIAR — executar o ciclo automático T₀→T₃ (apenas a partir do Safe State)"
+            data-tip-pos="bottom"
           >
             INICIAR
           </button>
-          <button className="run-btn" disabled={!!busy} onClick={() => run(api.stop, 'stop')}>
+          <button
+            className="run-btn"
+            disabled={!!busy}
+            onClick={() => run(api.stop, 'stop')}
+            data-tip="PARAR — encerrar o processo e retornar ao Safe State"
+            data-tip-pos="bottom"
+          >
             PARAR
           </button>
           <StopButton />
