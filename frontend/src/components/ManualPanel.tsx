@@ -1,5 +1,4 @@
-import { useEffect, useState } from 'react';
-import { api } from '../api/client';
+import { useManualActuation } from '../store/manual';
 
 const VALVES = [
   { key: 'sv1', label: 'SV1 · Hélio' },
@@ -9,54 +8,13 @@ const VALVES = [
   { key: 'sv5', label: 'SV5 · Pistão' },
 ] as const;
 
-/** Matriz de controles manuais: SV1-SV5, bomba e sliders de VM (habilitável). */
+/**
+ * Matriz de controles manuais: SV1-SV5, bomba e sliders de VM.
+ * Guiado pela telemetria (estado real = fonte de verdade).
+ */
 export function ManualPanel({ enabled }: { enabled: boolean }) {
-  const [valves, setValves] = useState<Record<string, number>>({
-    sv1: 0,
-    sv2: 0,
-    sv3: 0,
-    sv4: 0,
-    sv5: 0,
-  });
-  const [pump, setPump] = useState(0);
-  const [pwm, setPwm] = useState({ u: 0, f2: 0 });
-  const [sent, setSent] = useState(false);
-
-  useEffect(() => {
-    if (!sent) return;
-    const t = setTimeout(() => setSent(false), 1200);
-    return () => clearTimeout(t);
-  }, [sent]);
-
-  const push = (next: { valves?: Record<string, number>; pump?: number; pwm?: { u: number; f2: number } }) => {
-    if (!enabled) return;
-    const state = {
-      valves: next.valves ?? valves,
-      pump: next.pump ?? pump,
-      pwm: next.pwm ?? pwm,
-    };
-    api.manual(state)
-      .then(() => setSent(true))
-      .catch((e) => console.error('manual:', e));
-  };
-
-  const toggleValve = (key: string) => {
-    const next = { ...valves, [key]: valves[key] ? 0 : 1 };
-    setValves(next);
-    push({ valves: next });
-  };
-
-  const togglePump = () => {
-    const next = pump ? 0 : 1;
-    setPump(next);
-    push({ pump: next });
-  };
-
-  const setSlider = (which: 'u' | 'f2', value: number) => {
-    const next = { ...pwm, [which]: value };
-    setPwm(next);
-    push({ pwm: next });
-  };
+  const { valves, pump, pwm, sent, toggleValve, togglePump, setPwm } =
+    useManualActuation(enabled);
 
   return (
     <div className={`panel manual-panel${enabled ? '' : ' is-locked'}`}>
@@ -93,7 +51,7 @@ export function ManualPanel({ enabled }: { enabled: boolean }) {
             max={255}
             value={pwm.u}
             disabled={!enabled}
-            onChange={(e) => setSlider('u', Number(e.target.value))}
+            onChange={(e) => setPwm('u', Number(e.target.value))}
           />
           <em>{pwm.u}</em>
         </label>
@@ -105,7 +63,7 @@ export function ManualPanel({ enabled }: { enabled: boolean }) {
             max={255}
             value={pwm.f2}
             disabled={!enabled}
-            onChange={(e) => setSlider('f2', Number(e.target.value))}
+            onChange={(e) => setPwm('f2', Number(e.target.value))}
           />
           <em>{pwm.f2}</em>
         </label>

@@ -119,7 +119,7 @@ function MonitorView({ manualMode }: { manualMode: boolean }) {
       <section className="widget-strip">
         <PumpWidget />
         <StageProgress />
-        <ValvePanel />
+        <ValvePanel enabled={manualMode} />
       </section>
 
       <section className="grid">

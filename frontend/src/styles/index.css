@@ -1173,7 +1173,33 @@ body {
   background: var(--panel-2);
   font-family: var(--mono);
   font-size: 11px;
+  color: inherit;
+  text-align: left;
+  cursor: default;
   transition: all 0.2s ease;
+}
+
+.valve-ind:disabled {
+  cursor: default;
+}
+
+/* Indicador clicável (válvula/bomba no modo manual) */
+.valve-ind.is-btn {
+  cursor: pointer;
+}
+
+.valve-ind.is-btn:not(:disabled):hover {
+  border-color: var(--line-2);
+  background: var(--panel-3);
+  transform: translateY(-1px);
+}
+
+.valve-ind.is-btn:not(:disabled):active {
+  transform: translateY(0);
+}
+
+.valve-ind.is-btn.is-on:not(:disabled):hover {
+  filter: brightness(1.2);
 }
 
 .valve-led {
