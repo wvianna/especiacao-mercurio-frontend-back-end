@@ -143,8 +143,8 @@ function drawChart(
   }
 }
 
-/** Gráficos de tendência por forno (temperatura/setpoint °C × PWM %). */
-export function TrendChart() {
+/** Um forno: canvas com eixo duplo (°C × %) e legenda. */
+function FurnaceChart({ opts }: { opts: ChartOpts }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const samples = useTelemetry((s) => s.buffer);
 
@@ -164,66 +164,63 @@ export function TrendChart() {
         canvas.height = h * dpr;
       }
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-      const gap = 16;
-      const chartH = (h - gap) / 2;
-
-      drawChart(
-        ctx,
-        w,
-        chartH,
-        {
-          title: 'Forno 1 · Tubo U',
-          tempColor: COLORS.temp1,
-          spColor: COLORS.setpoint,
-          pwmColor: COLORS.pwm,
-          temp: (s) => s.t1,
-          setpoint: (s) => s.spU,
-          pwm: (s) => (s.pwmU / 255) * 100,
-          tempMin: -80,
-          tempMax: 280,
-          labels: { temp: 'T1 °C', setpoint: 'SP °C', pwm: 'PWM %' },
-        },
-        samples,
-      );
-
-      ctx.save();
-      ctx.translate(0, chartH + gap);
-      drawChart(
-        ctx,
-        w,
-        chartH,
-        {
-          title: 'Forno 2 · Atomizador',
-          tempColor: COLORS.temp2,
-          spColor: COLORS.setpoint,
-          pwmColor: COLORS.pwm,
-          temp: (s) => s.t2,
-          setpoint: (s) => s.spF2,
-          pwm: (s) => (s.pwmF2 / 255) * 100,
-          tempMin: -20,
-          tempMax: 820,
-          labels: { temp: 'T2 °C', setpoint: 'SP °C', pwm: 'PWM %' },
-        },
-        samples,
-      );
-      ctx.restore();
-
+      drawChart(ctx, w, h, opts, samples);
       raf = requestAnimationFrame(render);
     };
     raf = requestAnimationFrame(render);
     return () => cancelAnimationFrame(raf);
-  }, [samples]);
+  }, [samples, opts]);
+
+  return <canvas ref={ref} className="trend-canvas" />;
+}
+
+/** Um painel por forno, lado a lado (eixo y mais alto para melhor leitura). */
+export function TrendChart() {
+  const samples = useTelemetry((s) => s.buffer);
 
   return (
-    <div className="panel trend-panel">
-      <div className="panel-head">
-        <h2>Gráficos de Tendência — Fornos</h2>
-        <span className="panel-sub">
-          {samples.length} amostras · eixo esq. °C · eixo dir. %
-        </span>
+    <div className="trend-grid">
+      <div className="panel trend-panel">
+        <div className="panel-head">
+          <h2>Forno 1 · Tubo U</h2>
+          <span className="panel-sub">{samples.length} amostras</span>
+        </div>
+        <FurnaceChart
+          opts={{
+            title: 'Temperatura × PWM',
+            tempColor: COLORS.temp1,
+            spColor: COLORS.setpoint,
+            pwmColor: COLORS.pwm,
+            temp: (s) => s.t1,
+            setpoint: (s) => s.spU,
+            pwm: (s) => (s.pwmU / 255) * 100,
+            tempMin: -80,
+            tempMax: 280,
+            labels: { temp: 'T1 °C', setpoint: 'SP °C', pwm: 'PWM %' },
+          }}
+        />
       </div>
-      <canvas ref={ref} className="trend-canvas" />
+
+      <div className="panel trend-panel">
+        <div className="panel-head">
+          <h2>Forno 2 · Atomizador</h2>
+          <span className="panel-sub">{samples.length} amostras</span>
+        </div>
+        <FurnaceChart
+          opts={{
+            title: 'Temperatura × PWM',
+            tempColor: COLORS.temp2,
+            spColor: COLORS.setpoint,
+            pwmColor: COLORS.pwm,
+            temp: (s) => s.t2,
+            setpoint: (s) => s.spF2,
+            pwm: (s) => (s.pwmF2 / 255) * 100,
+            tempMin: -20,
+            tempMax: 820,
+            labels: { temp: 'T2 °C', setpoint: 'SP °C', pwm: 'PWM %' },
+          }}
+        />
+      </div>
     </div>
   );
 }

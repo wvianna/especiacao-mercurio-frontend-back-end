@@ -16,24 +16,25 @@ function isToggleable(kind: string): boolean {
 }
 
 /**
- * Painel de status dinâmico dos atuadores (verde = ON, cinza = OFF).
- * Em modo MANUAL, os indicadores de válvulas e da bomba viram botões
- * clicáveis que acionam/desligam o dispositivo em tempo real.
+ * Painel mesclado de atuadores: status (verde = ON, cinza = OFF) + controle
+ * manual (clique para alternar válvulas/bomba e sliders de VM dos fornos).
+ * No modo AUTO vira apenas um painel de status (somente leitura).
  */
-export function ValvePanel({ enabled }: { enabled: boolean }) {
+export function ActuatorPanel({ enabled }: { enabled: boolean }) {
   const t = useTelemetry((s) => s.latest);
-  const { toggleValve, togglePump } = useManualActuation(enabled);
+  const { pwm, sent, toggleValve, togglePump, setPwm } =
+    useManualActuation(enabled);
 
   const toggle = (key: string) => (key === 'pump' ? togglePump() : toggleValve(key));
 
   return (
-    <div className="panel valve-panel">
+    <div className={`panel actuator-panel${enabled ? '' : ' is-locked'}`}>
       <div className="panel-head">
-        <h2>Status dos Atuadores</h2>
-        <span className="panel-sub">
-          {enabled ? 'clique para acionar (manual)' : t ? 'estado real (DAQ)' : 'sem telemetria'}
-        </span>
+        <h2>Controles e Atuadores</h2>
+        {sent && <span className="sent-ok">✓ enviado</span>}
+        {!enabled && <span className="lock-hint">🔒 ative o modo manual</span>}
       </div>
+
       <div className="valve-grid">
         {ACTUATOR_ROWS.map((r) => {
           const on = isOn(t, r.key);
@@ -53,6 +54,33 @@ export function ValvePanel({ enabled }: { enabled: boolean }) {
             </button>
           );
         })}
+      </div>
+
+      <div className="act-sliders">
+        <label>
+          <span>VM Forno 1 (Tubo U)</span>
+          <input
+            type="range"
+            min={0}
+            max={255}
+            value={pwm.u}
+            disabled={!enabled}
+            onChange={(e) => setPwm('u', Number(e.target.value))}
+          />
+          <em>{pwm.u}</em>
+        </label>
+        <label>
+          <span>VM Forno 2 (Atomizador)</span>
+          <input
+            type="range"
+            min={0}
+            max={255}
+            value={pwm.f2}
+            disabled={!enabled}
+            onChange={(e) => setPwm('f2', Number(e.target.value))}
+          />
+          <em>{pwm.f2}</em>
+        </label>
       </div>
     </div>
   );

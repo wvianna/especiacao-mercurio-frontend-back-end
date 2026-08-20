@@ -42,22 +42,21 @@ graph LR
   - `lib/daqcore/` — parser JSON, watchdog e `pump_toggle` (portáveis, testáveis em host).
 - **Frontend (`frontend/src/`)**
   - `App.tsx` — layout com modos MONITOR/CONFIG, seletor AUTO/MANUAL e integração WS.
-  - `components/TimingDiagram.tsx` — Diagrama de Tempos (Gantt SVG): faixas T₀–T₃ com "set-point vs. actual" e cursor de progresso.
+  - `components/TimingDiagram.tsx` — Diagrama de Tempos (Gantt SVG): faixas T₀–T₃ com set-points, matriz de atuadores, LED de status (vermelho/cinza) e cursor de progresso real.
   - `components/StageProgress.tsx` — barra de progresso da etapa com contagem regressiva para a próxima transição.
-  - `components/ValvePanel.tsx` — status dinâmico dos atuadores (verde = ON, cinza = OFF).
-  - `components/PumpWidget.tsx` — widget crítico da Bomba Peristáltica (injeção de TEBS).
-  - `components/Synoptic.tsx` — fluxograma com fase atual e leituras.
-  - `components/TrendChart.tsx` — gráficos VP×SP, °C/s e PWM (canvas).
-  - `components/ManualPanel.tsx` — controles manuais (habilitados no modo manual).
+  - `components/ActuatorPanel.tsx` — painel unificado "Controles e Atuadores": status (verde/cinza) + acionamento manual (válvulas/bomba clicáveis e sliders de VM).
+  - `components/TrendChart.tsx` — dois painéis lado a lado (Forno 1 · Tubo U e Forno 2 · Atomizador) com eixo duplo (°C × %) e legenda.
   - `components/ConfigPanel.tsx` — Set-Point Configuration Mode (LER / SALVAR CONFIGURAÇÕES) com resumo das etapas.
-  - `lib/stages.ts` — metadados das etapas e matriz de atuadores (fonte única p/ Gantt, válvulas e progresso).
+  - `components/StatusBar.tsx` — barra de status com a **etapa em execução** piscando à direita.
+  - `store/manual.ts` — hook `useManualActuation` (controles manuais guiados pela telemetria).
+  - `lib/stages.ts` — metadados das etapas e matriz de atuadores (fonte única p/ Gantt, atuadores e progresso).
 
 **Fluxo típico (ciclo a 250 ms):**
 
 1. Backend envia JSON de escrita (válvulas/bomba/PWM) ao DAQ.
 2. DAQ lê termopares e responde JSON de leitura (T1/T2, status, erro).
 3. Backend atualiza a FSM (PID/rampa) e publica telemetria no WebSocket.
-4. IHM renderiza sinótico + gráficos a partir da telemetria.
+4. IHM renderiza Diagrama de Tempos, atuadores e gráficos por forno a partir da telemetria.
 
 ---
 
@@ -281,18 +280,19 @@ O simulador do DAQ vive em `backend/tests/simulator.py` e emula o protocolo JSON
 A IHM é servida pelo backend em `http://<ip-do-rpi>:8000`. Fluxo de operação:
 
 1. **Conferir estado inicial** — o badge deve mostrar **SAFE STATE**; T1/T2 com leitura válida e "WS ok" na barra de status.
-2. **Configurar o método** (painel à direita):
+2. **Escolher o modo de exibição** — **MONITOR** (acompanhamento do processo) ou **CONFIG** (parametrização).
+3. **Configurar o método** (modo CONFIG):
    - Tempos T₁/T₂/T₃ (s), tempo de rampa, temperatura do N₂, alvo (230 °C), ganhos PID e setpoint do Forno 2 (700 °C).
-   - **ESCREVER** persiste em disco; **LER** recarrega. (Parâmetros são persistentes entre execuções.)
-3. **Modo AUTOMÁTICO** (padrão):
-   - Pressione **INICIAR** → o sistema percorre T₀ → T₃ automaticamente.
-   - Acompanhe a **fase atual** no sinótico/badge, as temperaturas e a taxa de variação (°C/s).
+   - **SALVAR CONFIGURAÇÕES** persiste em disco; **LER** recarrega. (Parâmetros são persistentes entre execuções.)
+4. **Modo AUTOMÁTICO** (padrão):
+   - Pressione **INICIAR** → o sistema percorre T₀ → T₃ automaticamente; a **etapa em execução** pisca à direita da barra de status.
+   - Acompanhe o **Diagrama de Tempos**, o progresso da etapa e as temperaturas (°C/s) nos gráficos.
    - **PARAR** encerra o ciclo (volta ao Safe State).
-4. **Modo MANUAL** (operação direta):
-   - Selecione **MANUAL** no cabeçalho → os controles de válvulas (SV1–SV5), bomba e aquecedores (sliders de VM) são habilitados.
-   - Acione os dispositivos diretamente; cada ação é enviada ao DAQ via `PUT /api/manual`.
+5. **Modo MANUAL** (operação direta):
+   - Selecione **MANUAL** no cabeçalho → o painel **"Controles e Atuadores"** habilita válvulas (SV1–SV5), bomba e sliders de VM dos fornos.
+   - Acione os dispositivos diretamente (por clique nos indicadores ou nos botões); cada ação é enviada ao DAQ via `PUT /api/manual`.
    - Selecione **AUTO** para voltar ao modo automático (retorna ao Safe State).
-5. **Emergência** — **STOP** a qualquer momento: desce o copo de N₂ (SV5), desliga os fornos e retorna ao Safe State.
+6. **Emergência** — **STOP** a qualquer momento: desce o copo de N₂ (SV5), desliga os fornos e retorna ao Safe State.
 
 > [!IMPORTANT]
 > Em **AUTO**, os controles manuais ficam bloqueados (proteção contra operação indevida durante o ciclo). O **INICIAR** só opera a partir do Safe State.

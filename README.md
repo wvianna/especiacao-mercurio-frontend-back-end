@@ -11,12 +11,13 @@ Sistema de automação e supervisão para **preparação de amostras em especia�
 
 ## Funcionalidades
 
-- 🔁 **Ciclo automático T₀ → T₃** com Máquina de Estados Finita (derivação, criofocalização, rampa e purga).
+- 🔁 **Ciclo automático T₀ → T₃** com Máquina de Estados Finita (derivação, criofocalização, rampa e purga) e **Diagrama de Tempos** (Gantt) com set-point × progresso real.
 - 🌡️ **Controle PID misto**: rampa dinâmica no Tubo U (razão de taxas abaixo de 0 °C, PID acima) e setpoint fixo de 700 °C no Forno 2.
-- 🖥️ **IHM Web** com sinótico animado (azul = fluxo de hélio/vapor, vermelho = resistência ativa), gráficos de tendência (VP × SP, °C/s, PWM) em tempo real a 4 Hz.
-- 🔧 **Modo manual** com controle direto de válvulas (SV1–SV5), bomba e aquecedores.
+- 🖥️ **IHM Web em tempo real (4 Hz)** com dois modos — **MONITOR** (Diagrama de Tempos, progresso da etapa, atuadores e gráficos por forno) e **CONFIG** (set-points persistentes).
+- 🔧 **Modo manual** com o painel unificado **"Controles e Atuadores"** (válvulas SV1–SV5, bomba e sliders de VM dos fornos).
 - 💾 **Persistência de parâmetros** (ganhos PID, tempos, rampa, setpoints) em JSON com backup rotativo.
-- 🛡️ **Segurança**: watchdog no Arduino (desliga fornos em ≤ 1 s sem pacotes) e botão STOP de alta prioridade.
+- 🛡️ **Segurança**: watchdog no Arduino (desliga fornos em ≤ 1 s sem pacotes), interlock da matriz de acionamento e botão STOP de alta prioridade.
+- 🔄 **Bomba por pulso (toggle)**: o firmware gera um pulso de 600 ms nas transições liga/desliga da bomba peristáltica.
 
 ## Arquitetura
 
@@ -85,11 +86,13 @@ cd ..
 
 ## IHM — Uso
 
-1. **Modo AUTO / MANUAL**: selecione no cabeçalho. Em **MANUAL**, os controles de válvulas, bomba e aquecedores são habilitados para operação direta; em **AUTO**, eles ficam bloqueados.
-2. **INICIAR**: executa o ciclo automático T₀ → T₃. **PARAR** encerra o processo com retorno ao *Safe State*.
-3. **STOP**: parada de emergência de alta prioridade.
-4. **Sinótico**: fluxograma indica a **fase atual**, temperaturas (T1/T2), taxa de variação (°C/s) e o estado do copo de N₂.
-5. **Configuração do Método**: edite tempos T₁/T₂/T₃, rampa, temperatura do N₂ e ganhos PID; use **LER** (recarrega) e **ESCREVER** (persiste em disco).
+1. **MONITOR / CONFIG**: alternância no cabeçalho. **MONITOR** exibe o painel de acompanhamento do processo; **CONFIG** foca a parametrização.
+2. **Modo AUTO / MANUAL**: em **MANUAL**, o painel "Controles e Atuadores" habilita o acionamento direto (válvulas, bomba e sliders de VM); em **AUTO**, vira apenas status (somente leitura).
+3. **INICIAR**: executa o ciclo automático T₀ → T₃ — a etapa em execução pisca à direita da barra de status. **PARAR** encerra com retorno ao *Safe State*.
+4. **STOP**: parada de emergência de alta prioridade.
+5. **Diagrama de Tempos**: faixas T₀–T₃ com set-points, matriz de atuadores e LED de status por dispositivo (vermelho = ligado, cinza = desligado).
+6. **Gráficos de Tendência**: um painel por forno com temperatura/setpoint (°C, eixo esquerdo) e PWM (%, eixo direito).
+7. **Configuração do Método** (modo CONFIG): edite tempos T₁/T₂/T₃, rampa, temperatura do N₂ e ganhos PID; use **LER** e **SALVAR CONFIGURAÇÕES** (persiste em disco).
 
 ## Firmware
 
@@ -128,7 +131,7 @@ cd ..
 ```
 ├── backend/        # Python + FastAPI (FSM, PID, persistência, API + WebSocket)
 ├── firmware/       # Arduino Uno (PlatformIO): I/O, PWM, termopares SPI, watchdog
-├── frontend/       # React + Vite + TS: sinótico, gráficos, controles e configuração
+├── frontend/       # React + Vite + TS: Diagrama de Tempos, atuadores, gráficos por forno e configuração
 ├── scripts/        # start.sh · stop.sh · firmware.sh · test.sh
 ├── docs/           # Especificação, requisitos, HANDSOFF e TDD
 └── .specs/         # Planejamento Spec-Driven (spec/design/tasks por feature)

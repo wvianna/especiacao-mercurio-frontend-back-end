@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react';
 import { StatusBar } from './components/StatusBar';
 import { TrendChart } from './components/TrendChart';
-import { ManualPanel } from './components/ManualPanel';
 import { ConfigPanel } from './components/ConfigPanel';
 import { StopButton } from './components/StopButton';
 import { TimingDiagram } from './components/TimingDiagram';
 import { StageProgress } from './components/StageProgress';
-import { ValvePanel } from './components/ValvePanel';
+import { ActuatorPanel } from './components/ActuatorPanel';
 import { useTelemetry } from './store/telemetry';
 import { connectTelemetry } from './ws/connection';
 import { api } from './api/client';
@@ -116,16 +115,11 @@ function MonitorView({ manualMode }: { manualMode: boolean }) {
 
       <section className="widget-strip">
         <StageProgress />
-        <ValvePanel enabled={manualMode} />
+        <ActuatorPanel enabled={manualMode} />
       </section>
 
-      <section className="grid">
-        <div className="col-main">
-          <TrendChart />
-        </div>
-        <aside className="col-side">
-          <ManualPanel enabled={manualMode} />
-        </aside>
+      <section className="trend-wrap">
+        <TrendChart />
       </section>
     </main>
   );

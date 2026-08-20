@@ -1,7 +1,0 @@
-https://github.com/wvianna/especiacao-mercurio-frontend-back-end.git
-
-
-
-Estou acessando remotamente via VS Code um servidor Raspberry Pi 3 com DietPi de 64 bits. Preciso que a interface física tenha a configuração da seguinte maneira: serviço DHCP habilitado com a rede 192.168.4.0, máscara CIDR /24, de forma que essa interface forneça um IP caso existe um cliente na rede local solicitando. Além disso, essa interface deve ter o IP fixo 192.168.4.1. E ao mesmo tempo, essa interface de rede deve, caso exista, obter o IP, a configuração de IP do servidor DHCP da rede local. Ou seja, a interface de rede física deve possuir dois IPs: um IP dinâmico obtido a partir da servidor DHCP da rede local e um IP fixo que será 192.168.4.1. Analise, investigue o ambiente e implemente no sistema operacional.
-
-o sistema está logado no raspberry com o ambiente configurado. O dAQ está na porta /dev/ttyUSB0. Execute o backend e frontend, após faça os testes. Corrija se necessário.

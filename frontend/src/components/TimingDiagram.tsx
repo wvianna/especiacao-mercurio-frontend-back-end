@@ -10,10 +10,10 @@ import {
 import { phaseLabel } from '../lib/phases';
 
 const W = 1040;
-const H = 372;
-const LABEL_W = 156;
-const HEADER_H = 58;
-const ROW_H = 28;
+const H = 220;
+const LABEL_W = 150;
+const HEADER_H = 40;
+const ROW_H = 20;
 const PLOT_X = LABEL_W;
 const PLOT_W = W - LABEL_W - 6;
 
