@@ -86,6 +86,10 @@ cd ..
 
 ## IHM — Uso
 
+![IHM Web — Especiação de Mercúrio](imagens/frontendweb.png)
+
+*Painel de monitoramento (modo MONITOR): Diagrama de Tempos, progresso da etapa, Controles e Atuadores e gráficos de tendência por forno.*
+
 1. **MONITOR / CONFIG**: alternância no cabeçalho. **MONITOR** exibe o painel de acompanhamento do processo; **CONFIG** foca a parametrização.
 2. **Modo AUTO / MANUAL**: em **MANUAL**, o painel "Controles e Atuadores" habilita o acionamento direto (válvulas, bomba e sliders de VM); em **AUTO**, vira apenas status (somente leitura).
 3. **INICIAR**: executa o ciclo automático T₀ → T₃ — a etapa em execução pisca à direita da barra de status. **PARAR** encerra com retorno ao *Safe State*.
