@@ -1,0 +1,47 @@
+% Abstract em inglês
+Mercury speciation is an analytical technique used to identify and quantify the
+different chemical species of this element in environmental samples, such as
+elemental mercury (Hg$^0$) and methylmercury. The sample preparation procedure
+requires strict control of a sequence of chemical steps --- derivatization with
+sodium tetraethylborate, cryofocusing in liquid nitrogen at approximately
+$-196\,\celsius$, controlled heating of the U-tube up to $230\,\celsius$, and
+atomization at $700\,\celsius$ --- so that the quality of the temperature ramp
+applied to the U-tube directly determines the correct separation and
+identification of the species.
+
+This work presents the design and implementation of an automation and
+supervision system for sample preparation in mercury speciation, conceived to
+replace a legacy LabVIEW-based system. The system adopts a master-slave
+architecture composed of a Raspberry Pi running the high-level logic in Python
+(finite state machine, proportional-integral-derivative --- PID --- control and
+parameter persistence), an Arduino Uno operating as a real-time data
+acquisition module responsible for driving valves and furnaces, reading
+thermocouples through the SPI interface and running a safety watchdog, and a
+Web human-machine interface (HMI) developed in React and TypeScript, with
+real-time monitoring over WebSocket, a timing diagram, trend charts and
+automatic and manual modes.
+
+The process was modeled as a finite state machine with four actuation phases
+($T_0$ to $T_3$) and an actuator matrix (solenoid valves SV1 to SV5,
+peristaltic pump and furnaces). Temperature control employs a mixed PID
+strategy: below $0\,\celsius$, the manipulated variable is computed as the ratio
+between the operator-required heating rate and the system rate, whereas above
+this threshold a closed-loop PID controller tracks a dynamic ramp setpoint up to
+$230\,\celsius$; Furnace 2 is regulated at a fixed setpoint of $700\,\celsius$.
+Communication between the Raspberry Pi and the Arduino is carried out through
+JSON packets over a serial link at 4~Hz, with a parametrization handshake and a
+double watchdog that forces the return to the safe state in case of
+communication loss.
+
+The development followed a test-driven approach, validated by unit,
+integration, functional and safety tests executed in a simulation environment
+without physical hardware. The results show that the proposed architecture
+meets the defined functional and safety requirements, ensuring repeatability of
+the control logic, auditable persistence of the method parameters and automatic
+safe shutdown in the presence of communication failures. Bench validation, with
+the calibration of the U-tube heating curve and the experimental verification of
+the temperature ramp, is presented as a follow-up stage of this work.
+
+\vspace{0.5cm}
+\noindent\textbf{Keywords:} automation; PID control; mercury speciation;
+finite state machine; human-machine interface; embedded system.

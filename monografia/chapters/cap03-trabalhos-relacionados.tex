@@ -1,0 +1,110 @@
+% ======================================================================
+% CAPÍTULO 3 — TRABALHOS RELACIONADOS
+% ======================================================================
+\chapter{TRABALHOS RELACIONADOS}
+
+Este capítulo situa o trabalho desenvolvido em relação a outras abordagens e
+sistemas descritos na literatura e na prática de instrumentação analítica,
+organizando a comparação em quatro eixos: instrumentação para especiação de
+mercúrio, controle de temperatura em fornos analíticos, arquiteturas de
+aquisição de dados e plataformas de supervisão.
+
+\section{Instrumentação para especiação de mercúrio}
+
+A literatura de especiação de mercúrio concentra-se sobretudo nos métodos
+químicos e nas estratégias de detecção, e menos na engenharia do controle que
+automatiza a preparação de amostras. Os trabalhos clássicos de Bloom
+\cite{bloom1989} e Liang e colaboradores \cite{liang1994} estabeleceram os
+protocolos de etilação em fase aquosa com NaBEt$_4$ e de separação por
+cromatografia gasosa com detecção por fluorescência atômica em vapor frio, que
+são a base química do processo aqui automatizado. Revisões como a de Leermakers
+e colaboradores \cite{leermakers2005} discutem as principais fontes de artefato
+e a necessidade de validação dos métodos de especiação, evidenciando que a
+repetibilidade das condições de preparação --- em particular da rampa térmica ---
+é um fator crítico de qualidade.
+
+No plano instrumental, equipamentos comerciais dedicados, como o analisador de
+mercúrio da família RA-915 da Lumex \cite{lumex}, integram a atomização e a
+detecção, mas tipicamente não expõem, ao usuário, o controle fino do
+sequenciamento da preparação que antecede a medida. Essa observação reforça a
+relevância de um sistema de automação dedicado à etapa de preparação, como o
+desenvolvido neste trabalho, que pode ser acoplado a detectores comerciais.
+
+\section{Controle de temperatura e rampas em fornos analíticos}
+
+O controle de temperatura em fornos de laboratório é um problema clássico de
+controle de processos, frequentemente resolvido com controladores PID
+\cite{astrom2006, ogata2010}. A literatura de controle aborda extensamente a
+sintonia de controladores PID, o tratamento de saturação (anti-windup) e o
+seguimento de setpoints variantes no tempo. No caso específico de rampas de
+temperatura, a abordagem de setpoint dinâmico em malha fechada é a mais comum
+quando a medição é confiável em toda a faixa. O sistema aqui proposto combina
+essa abordagem com uma estratégia de razão de taxas em malha aberta para a
+região em que o termopar não fornece leitura confiável --- uma solução de
+engenharia motivada pela limitação física do sensor, cuja discussão detalhada é
+apresentada no Capítulo~5.
+
+\section{Arquiteturas de aquisição de dados}
+
+No que se refere à arquitetura de hardware, duas famílias de solução são
+frequentes na instrumentação analítica: o uso de controladores lógicos
+programáveis (CLPs) e de sistemas de aquisição dedicados, tipicamente de custo
+elevado, e o uso de plataformas abertas de baixo custo baseadas em
+microcontroladores, como o Arduino, e em computadores de placa única, como o
+Raspberry Pi \cite{arduino, raspberrypi}. Plataformas abertas têm sido cada vez
+mais adotadas em instrumentação científica por sua flexibilidade, custo e
+ecossistema de desenvolvimento, especialmente quando os requisitos de tempo real
+são moderados e podem ser isolados em um microcontrolador dedicado.
+
+A arquitetura mestre-escravo adotada --- em que um computador de alto nível
+executa a lógica de supervisão e um microcontrolador executa a aquisição e o
+acionamento de campo em tempo real --- é uma solução de compromisso entre custo
+e determinismo. Essa separação também é defendida na engenharia de software
+como forma de reduzir o acoplamento entre a lógica de aplicação e os detalhes de
+hardware, melhorando a manutenibilidade do sistema.
+
+\section{Plataformas de supervisão e IHM}
+
+Historicamente, sistemas de supervisão laboratoriais eram construídos sobre
+plataformas proprietárias e monolíticas, como o LabVIEW, que acoplam a lógica de
+controle, a interface e a aquisição em um único ambiente. Embora produtivas para
+prototipagem, tais plataformas apresentam limitações de custo de licenciamento,
+dificuldade de manutenção e evolução e dependência de um fornecedor. A
+modernização para arquiteturas Web, com backend em linguagens de uso geral e
+IHM acessível por navegador, permite monitorar o processo a partir de qualquer
+dispositivo da rede local, integrar o registro de dados a sistemas de auditoria
+e reduzir o custo de evolução.
+
+No presente trabalho, a IHM Web emprega a comunicação em tempo real via
+WebSocket \cite{fette2011} para a telemetria e a arquitetura REST para comandos e
+configuração, uma combinação típica de aplicações modernas de supervisão. A
+tabela~\ref{tab:relacionados} resume o posicionamento da solução proposta em
+relação às alternativas consideradas.
+
+\begin{table}[htbp]
+\centering
+\caption{Comparação entre a solução proposta e alternativas para o controle do processo.}
+\label{tab:relacionados}
+\begin{tabular}{p{3.4cm}p{3.6cm}p{3.6cm}p{3.6cm}}
+\toprule
+\textbf{Critério} & \textbf{LabVIEW (legado)} & \textbf{CLP dedicado} & \textbf{Solução RPi + Arduino (proposta)} \\
+\midrule
+Custo de licença/plataforma & Alto & Alto & Baixo \\
+Isolamento de tempo real & Parcial & Alto & Alto (Arduino dedicado) \\
+Flexibilidade de IHM Web & Baixa & Baixa & Alta \\
+Persistência de parâmetros & Limitada & Limitada & Alta (JSON atômico) \\
+Watchdog de segurança & Ausente & Variável & Duplo (firmware + backend) \\
+Manutenção e evolução & Difícil & Moderada & Facilitada (código aberto) \\
+\bottomrule
+\end{tabular}\par\vspace{2pt}{\footnotesize Fonte: elaborada pelo autor.}\end{table}
+
+\section{Síntese e lacuna}
+
+A análise dos trabalhos e práticas relacionados indica que, embora existam
+soluções comerciais para partes do problema (detecção, controle de temperatura),
+não há, no domínio considerado, um sistema aberto e de baixo custo que integre,
+de forma coesa e segura, o sequenciamento da preparação de amostras, o controle
+PID da rampa do Tubo U e uma IHM Web moderna com persistência de parâmetros. A
+lacuna identificada --- e que este trabalho busca preencher --- é exatamente essa
+integração, acrescida de mecanismos explícitos de segurança funcional (estado
+seguro e watchdog) que o sistema legado não possuía.

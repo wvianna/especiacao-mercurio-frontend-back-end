@@ -1,0 +1,181 @@
+% ======================================================================
+% CAPÍTULO 6 — RESULTADOS E DISCUSSÃO
+% ======================================================================
+\chapter{RESULTADOS E DISCUSSÃO}
+
+Este capítulo apresenta os resultados da validação do sistema, obtidos pela
+execução das suítes de testes automatizados descritas na metodologia, e discute
+esses resultados à luz dos requisitos e dos critérios de aceitação definidos. Os
+valores reportados correspondem a execuções reais realizadas no ambiente de
+desenvolvimento do projeto.
+
+\section{Estratégia de validação executada}
+
+A validação foi organizada em três frentes, conforme a camada do sistema:
+
+\begin{itemize}
+  \item \textbf{Backend (Python):} testes unitários (FSM, PID, rampa,
+  persistência, enlace serial), testes da API REST e do WebSocket e testes
+  funcionais de ciclo completo e de segurança, executados com o \texttt{pytest};
+  \item \textbf{Firmware (\daq):} testes \emph{host-based} da biblioteca
+  portável \texttt{daqcore} (parser JSON, watchdog e pulso da bomba), executados
+  sem hardware no ambiente \texttt{native} do PlatformIO;
+  \item \textbf{IHM Web:} testes unitários dos \emph{stores} de telemetria, de
+  acionamento manual e de tema, executados com o Vitest.
+\end{itemize}
+
+A Tabela~\ref{tab:testes} consolida os resultados das execuções.
+
+\begin{table}[htbp]
+\centering
+\caption{Resultado da execução das suítes de testes automatizados.}
+\label{tab:testes}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Camada} & \textbf{Ferramenta} & \textbf{Arquivos} & \textbf{Testes} & \textbf{Resultado} \\
+\midrule
+Backend (Python) & pytest & 8 & 40 & 40 aprovados \\
+Firmware (\daq) & PlatformIO (host) & 1 & 14 & 14 aprovados \\
+IHM Web & Vitest & 4 & 13 & 13 aprovados \\
+\midrule
+\textbf{Total} & --- & 13 & 67 & 67 aprovados \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\par\vspace{-2pt}{\footnotesize Fonte: execu\c{c}\~oes realizadas em 05/09/2026 no ambiente de desenvolvimento do projeto.}
+
+\section{Testes unit\'arios e de integra\c{c}\~ao}
+
+\subsection{Backend}
+
+Os testes do backend cobrem os principais m\'odulos da l\'ogica de supervis\~ao:
+
+\begin{itemize}
+  \item \textbf{FSM:} valida\c{c}\~ao das transi\c{c}\~oes entre estados, da
+  matriz de acionamento em cada fase e do comportamento dos eventos de parada e
+  de emerg\^encia;
+  \item \textbf{PID e rampa:} valida\c{c}\~ao do c\'alculo da sa\'ida do
+  controlador, da satura\c{c}\~ao, do anti-windup, da taxa de aquecimento e da
+  sele\c{c}\~ao das duas regi\~oes de controle da rampa (raz\~ao de taxas abaixo
+  de $0\,\celsius$ e PID acima);
+  \item \textbf{Persist\^encia:} valida\c{c}\~ao da escrita e leitura at\^omicas,
+  da restaura\c{c}\~ao do backup e da valida\c{c}\~ao de faixas;
+  \item \textbf{Enlace serial:} valida\c{c}\~ao do codec JSON, da
+  serializa\c{c}\~ao/desserializa\c{c}\~ao e do tratamento de pacotes
+  malformados;
+  \item \textbf{API e integra\c{c}\~ao:} valida\c{c}\~ao dos endpoints de
+  configura\c{c}\~ao e de comando e do fluxo de ciclo completo com simulador de
+  \daq via portas seriais virtuais.
+\end{itemize}
+
+\subsection{Firmware}
+
+Os testes do firmware (\texttt{test\_daqcore}) validam: o parser de pacotes JSON
+(escrita e handshake de configura\c{c}\~ao), a rejei\c{c}\~ao de JSON inv\'alido,
+a satura\c{c}\~ao do PWM, a constru\c{c}\~ao do pacote de resposta, o
+comportamento do watchdog (n\~ao disparo antes do tempo limite, disparo ap\'os o
+tempo limite e rearme por nova batida) e a l\'ogica de pulso da bomba (pulso nas
+transi\c{c}\~oes liga/desliga e encerramento ap\'os o tempo definido).
+
+\subsection{IHM Web}
+
+Os testes do frontend validam a l\'ogica de assinatura e consumo da telemetria
+WebSocket, o sincronismo do estado dos controles manuais com a telemetria e a
+persist\^encia da prefer\^encia de tema, garantindo que os componentes reajam
+corretamente aos dados recebidos.
+
+\section{Testes funcionais do ciclo completo}
+
+Os testes funcionais exercitam o ciclo autom\'atico $T_0 \to T_3$ com o
+simulador do \daq, verificando que a FSM percorre as quatro fases na ordem
+correta e que a matriz de acionamento \'e aplicada conforme o esperado em cada
+fase (Tabela~\ref{tab:matriz}). A valida\c{c}\~ao confirmou que: (i) o ciclo
+somente inicia a partir do estado seguro; (ii) as dura\c{c}\~oes das fases
+seguem os par\^ametros configurados; e (iii) a telemetria publicada ao longo do
+ciclo cont\'em o estado, o progresso da etapa e o progresso geral do ciclo,
+habilitando o Diagrama de Tempos e a barra de progresso da IHM.
+
+Adicionalmente, o roteiro de estresse de comunica\c{c}\~ao a 4~Hz, executado com
+o simulador via \texttt{socat}, exercita o enlace serial de forma cont\'inua,
+verificando a integridade da troca de pacotes e a estabilidade do loop de
+controle ao longo do tempo.
+
+\section{Testes de seguran\c{c}a}
+
+Os cen\'arios de seguran\c{c}a simulam a perda de comunica\c{c}\~ao serial e
+verificam as duas camadas de prote\c{c}\~ao:
+
+\begin{itemize}
+  \item \textbf{Watchdog do firmware:} quando nenhum pacote v\'alido \'e recebido
+  dentro do tempo limite (1~s), o firmware comuta os atuadores para o estado
+  seguro, desligando os fornos;
+  \item \textbf{Watchdog do backend:} quando o \daq deixa de responder por mais
+  de 1~s em uma fase ativa, o backend dispara o evento de emerg\^encia e a FSM
+  retorna ao estado seguro.
+\end{itemize}
+
+Os testes confirmam que, em ambos os casos, os fornos s\~ao desligados dentro do
+intervalo de seguran\c{c}a especificado ($\le 1$~s), atendendo ao crit\'erio de
+aceita\c{c}\~ao de seguran\c{c}a.
+
+\section{Discuss\~ao}
+
+\subsection{Atendimento aos objetivos de valida\c{c}\~ao}
+
+Os resultados obtidos indicam que a implementa\c{c}\~ao atende aos objetivos
+funcionais e de seguran\c{c}a definidos na metodologia, com 67 testes aprovados
+distribu\'idos pelas tr\^es camadas do sistema. Tr\^es observa\c{c}\~oes merecem
+destaque:
+
+\begin{enumerate}[label=\arabic*)]
+  \item \textbf{Corre\c{c}\~ao da l\'ogica de controle:} os testes de FSM, PID e
+  rampa validam matematicamente a estrat\'egia de controle mista, incluindo o
+  tratamento da satura\c{c}\~ao e a sele\c{c}\~ao da regi\~ao de opera\c{c}\~ao,
+  o que \'e condi\c{c}\~ao necess\'aria --- ainda que n\~ao suficiente --- para a
+  qualidade da rampa em bancada;
+  \item \textbf{Seguran\c{c}a por constru\c{c}\~ao:} a valida\c{c}\~ao dos
+  watchdogs em ambas as camadas demonstra que o requisito de parada segura
+  autom\'atica \'e atendido no n\'ivel de software, independentemente do
+  hardware;
+  \item \textbf{Integra\c{c}\~ao entre camadas:} os testes de ciclo completo com
+  simulador confirmam a coer\^encia entre a FSM, o protocolo serial e a
+  telemetria consumida pela IHM, reduzindo o risco de falhas de integra\c{c}\~ao
+  quando o hardware real for conectado.
+\end{enumerate}
+
+\subsection{Compara\c{c}\~ao com os crit\'erios de aceita\c{c}\~ao}
+
+Dos cinco crit\'erios de aceita\c{c}\~ao consolidados na
+Tabela~\ref{tab:criterios}, tr\^es puderam ser verificados no ambiente de
+valida\c{c}\~ao (disponibilidade da comunica\c{c}\~ao, persist\^encia e
+seguran\c{c}a do watchdog) e dois dependem de medi\c{c}\~ao em bancada
+(linearidade da rampa e estabilidade do Forno 2). \'E importante destacar que
+esses \'ultimos s\~ao crit\'erios de \emph{desempenho t\'ermico} do processo
+f\'isico e n\~ao podem ser atestados por testes de software: eles exigem a
+calibra\c{c}\~ao da curva de aquecimento do Tubo U e a verifica\c{c}\~ao
+experimental das curvas de temperatura, etapas de continuidade deste trabalho.
+
+\subsection{Limita\c{c}\~oes}
+
+A principal limita\c{c}\~ao da valida\c{c}\~ao realizada \'e a aus\^encia de
+medi\c{c}\~oes em bancada com o processo f\'isico. Os testes automatizados
+validam a correta execu\c{c}\~ao da l\'ogica e dos mecanismos de seguran\c{c}a,
+mas n\~ao substituem a verifica\c{c}\~ao experimental da din\^amica t\'ermica.
+Al\'em disso, a raz\~ao de taxas empregada na regi\~ao de malha aberta depende da
+calibra\c{c}\~ao da taxa de aquecimento do sistema (curva ``Taxa $\times$ PWM''),
+que deve ser medida no equipamento real; na aus\^encia desse dado, a
+implementa\c{c}\~ao adota uma aproxima\c{c}\~ao que precisa ser confirmada.
+Registra-se, ainda, a indefini\c{c}\~ao quanto ao circuito integrado exato de
+convers\~ao do termopar (MAX6675 ou MAX31855), que n\~ao altera a l\'ogica de
+controle, mas deve ser confirmada na documenta\c{c}\~ao f\'isica do equipamento.
+
+\subsection{Implica\c{c}\~oes}
+
+No plano t\'ecnico, os resultados demonstram a viabilidade da arquitetura
+proposta para substituir o sistema legado, com vantagens de custo, flexibilidade
+e seguran\c{c}a. No plano operacional, a persist\^encia dos par\^ametros e o
+registro de tend\^encias criam condi\c{c}\~oes para a repetibilidade e a
+auditoria do m\'etodo, requisitos valorizados em ambiente anal\'itico. A etapa de
+valida\c{c}\~ao em bancada \'e o passo natural para confirmar os crit\'erios de
+desempenho t\'ermico e para calibrar a rampa do Tubo U.

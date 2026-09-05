@@ -1,0 +1,48 @@
+% Resumo em português
+A especiação de mercúrio é uma técnica analítica utilizada para identificar e
+quantificar as diferentes espécies químicas desse elemento em amostras
+ambientais, tais como mercúrio elementar (Hg$^0$) e metilmercúrio. O
+procedimento de preparação de amostras exige o controle rigoroso de uma
+sequência de etapas químicas --- derivatização com tetraetilborato de sódio,
+criofocalização em nitrogênio líquido a aproximadamente $-196\,\celsius$,
+aquecimento controlado do Tubo U até $230\,\celsius$ e atomização a
+$700\,\celsius$ ---, de modo que a qualidade da rampa de temperatura imposta ao
+Tubo U determina diretamente a correta separação e identificação das espécies.
+
+Este trabalho apresenta o projeto e a implementação de um sistema de automação e
+supervisão para a preparação de amostras em especiação de mercúrio, concebido
+para substituir um sistema legado baseado em LabVIEW. O sistema adota uma
+arquitetura mestre-escravo composta por um Raspberry Pi, que executa a lógica de
+alto nível em Python (máquina de estados finita, controle proporcional-integral-
+derivativo --- PID --- e persistência de parâmetros), um Arduino Uno operando
+como módulo de aquisição de dados em tempo real, responsável pelo acionamento de
+válvulas e fornos, pela leitura de termopares via interface SPI e por um
+watchdog de segurança, e uma interface homem-máquina (IHM) Web desenvolvida em
+React e TypeScript, com monitoramento em tempo real via WebSocket, Diagrama de
+Tempos, gráficos de tendência e modos automático e manual.
+
+O processo foi modelado em uma máquina de estados finita com quatro fases de
+acionamento ($T_0$ a $T_3$) e uma matriz de atuadores (válvulas SV1 a SV5,
+bomba peristáltica e fornos). O controle de temperatura emprega uma estratégia
+PID mista: abaixo de $0\,\celsius$, a variável manipulada é calculada pela razão
+entre a taxa de aquecimento desejada pelo operador e a taxa do sistema,
+enquanto, acima desse limiar, um controlador PID em malha fechada segue um
+setpoint dinâmico de rampa até $230\,\celsius$; o Forno 2 é regulado em setpoint
+fixo de $700\,\celsius$. A comunicação entre o Raspberry Pi e o Arduino é
+realizada por pacotes JSON em enlace serial a 4 Hz, com handshake de
+parametrização e watchdog duplo que impõe o retorno ao estado seguro em caso de
+perda de comunicação.
+
+O desenvolvimento seguiu a abordagem de desenvolvimento orientado a testes, com
+validação por testes unitários, de integração, funcionais e de segurança
+executados em ambiente de simulação sem hardware físico. Os resultados mostram
+que a arquitetura proposta atende aos requisitos funcionais e de segurança
+definidos, garantindo repetibilidade da lógica de controle, persistência
+auditável dos parâmetros do método e parada segura automática diante de falhas
+de comunicação. A validação em bancada, com a calibração da curva de aquecimento
+do Tubo U e a verificação experimental da rampa de temperatura, é apresentada
+como etapa de continuidade do trabalho.
+
+\vspace{0.5cm}
+\noindent\textbf{Palavras-chave:} automação; controle PID; especiação de
+mercúrio; máquina de estados finita; interface homem-máquina; sistema embarcado.

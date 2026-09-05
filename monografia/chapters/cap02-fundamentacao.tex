@@ -1,0 +1,369 @@
+% ======================================================================
+% CAPÍTULO 2 — FUNDAMENTAÇÃO TEÓRICA
+% ======================================================================
+\chapter{FUNDAMENTAÇÃO TEÓRICA}
+
+Este capítulo apresenta os conceitos necessários à compreensão do problema e da
+solução desenvolvida. Inicialmente, aborda-se a química e o processo de
+especiação de mercúrio; em seguida, os fundamentos de automação e controle de
+processos, incluindo o controlador PID e as máquinas de estado finitas; depois,
+a base tecnológica de sistemas embarcados e comunicação; e, por fim, os
+elementos de interface homem-máquina e de segurança funcional empregados.
+
+\section{Especiação de mercúrio}
+
+O mercúrio é um elemento traço de interesse ambiental e sanitário reconhecido
+por sua toxicidade e por sua capacidade de ser transportado a longas distâncias
+na atmosfera. Do ponto de vista analítico, porém, a determinação do teor total
+de mercúrio em uma amostra é insuficiente para avaliações de risco: as espécies
+de mercúrio apresentam toxicidades e comportamentos biogeoquímicos distintos, e
+é a \emph{especiação} --- a determinação das concentrações das diferentes formas
+químicas --- que fornece a informação relevante \cite{leermakers2005}.
+
+As espécies de interesse mais frequentes em amostras ambientais são o mercúrio
+elementar (Hg$^0$) e o metilmercúrio (CH$_3$Hg$^+$), além de outras formas
+orgânicas e inorgânicas. Devido às baixíssimas concentrações típicas (da ordem
+de picogramas a nanogramas), as determinações exigem etapas de derivação
+química que convertam as espécies em formas voláteis e estáveis, adequadas à
+separação e à detecção \cite{bloom1989, leermakers2005}.
+
+\section{O processo de preparação de amostras}
+
+O sistema considerado neste trabalho executa a etapa de \emph{preparação de
+amostras} que antecede a detecção propriamente dita. A Figura~\ref{fig:processo}
+apresenta, de forma esquemática, os principais componentes do processo: o frasco
+de reação contendo a amostra, o dissecante de náfion, o Tubo U com o copo de
+nitrogênio líquido, o Forno 2 e o detector.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  scale=0.82, transform shape,
+  font=\small,
+  block/.style={rectangle, draw, minimum width=2.2cm, minimum height=0.8cm,
+                align=center},
+  arr/.style={-{Latex[length=2mm]}, thick}
+]
+  \node[block] (fr) at (0,0) {Frasco de rea\c{c}\~ao};
+  \node[block] (na) at (4.2,0) {Dissecante\\ (n\'afion)};
+  \node[block] (tu) at (8.4,0) {Tubo U\\ (Forno 1)};
+  \node[block] (f2) at (11.6,0) {Forno 2\\ (atomizador)};
+  \node[block] (lu) at (14.8,0) {Detector\\ Lumex};
+  \node[rectangle, draw, dashed, minimum width=2.6cm, minimum height=1.0cm,
+        align=center] (cop) at (8.4,-2.0) {Copo de N$_2$\\ $-196\,\celsius$};
+  \draw[arr] (fr) -- node[above,font=\scriptsize]{h\'elio + vapor} (na);
+  \draw[arr] (na) -- node[above,font=\scriptsize]{esp\'ecies} (tu);
+  \draw[arr] (tu) -- (f2);
+  \draw[arr] (f2) -- (lu);
+  \draw[arr,<->] (cop) -- (tu);
+\end{tikzpicture}
+\caption{Representa\c{c}\~ao esquem\'atica do processo de prepara\c{c}\~ao de amostras.}
+\label{fig:processo}
+\par\vspace{2pt}{\footnotesize Fonte: elaborada pelo autor com base na documenta\c{c}\~ao t\'ecnica do projeto.}
+\end{figure}
+
+\subsection{Derivatiza\c{c}\~ao}
+
+A amostra l\'iquida \'e inserida no frasco de rea\c{c}\~ao, onde recebe uma
+solu\c{c}\~ao de tetraetilborato de s\'odio (TEBS, NaBEt$_4$). O TEBS promove a
+\emph{derivatiza\c{c}\~ao} das esp\'ecies de merc\'urio, convertendo-as em
+formas alquiladas vol\'ateis e termicamente est\'aveis. Esse procedimento de
+etila\c{c}\~ao em fase aquosa, seguido de cromatografia gasosa e detec\c{c}\~ao
+por fluoresc\^encia at\^omica com vapor frio, \'e uma das t\'ecnicas cl\'assicas
+de especia\c{c}\~ao de merc\'urio \cite{bloom1989, liang1994}. O g\'as h\'elio,
+inerte e de elevada pureza, \'e introduzido no frasco com duas finalidades:
+agitar a amostra e arrastar (purgar) os vapores das esp\'ecies derivatizadas em
+dire\c{c}\~ao \`as pr\'oximas etapas do sistema.
+
+\subsection{Secagem e criofocaliza\c{c}\~ao}
+
+Ao purgar os vapores, o h\'elio carrega consigo umidade da solu\c{c}\~ao, que
+constitui um interferente para a criofocaliza\c{c}\~ao e para a medi\c{c}\~ao.
+Um dissecante de \emph{n\'afion} --- uma membrana polim\'erica perme\'avel
+seletivamente \`a \'agua --- \'e empregado para remover a umidade do fluxo
+gasoso antes de este atingir o Tubo U.
+
+O Tubo U \'e um tubo de vidro em forma de ``U'' envolvido por um filamento
+resistivo (o Forno 1). O tubo est\'a imerso em um copo contendo nitrog\^enio
+l\'iquido a aproximadamente $-196\,\celsius$, mantido suspenso por um pist\~ao
+criog\^enico (v\'alvula SV5). Nessa temperatura, as esp\'ecies derivatizadas que
+chegam pelo fluxo de h\'elio s\~ao retidas por \emph{criofocaliza\c{c}\~ao},
+concentrando-se em uma zona estreita do tubo, o que melhora a resolu\c{c}\~ao da
+posterior libera\c{c}\~ao t\'ermica.
+
+\subsection{Rampa de temperatura e separa\c{c}\~ao das esp\'ecies}
+
+Ap\'os o per\'iodo de criofocaliza\c{c}\~ao, definido pelo operador, o copo de
+nitrog\^enio \'e abaixado e o aquecimento do Forno 1 \'e iniciado. A temperatura
+do Tubo U deve crescer de forma aproximadamente linear, em uma rampa que parte
+de cerca de $-50\,\celsius$ --- o piso de leitura confi\'avel do sensor --- e
+atinge at\'e $230\,\celsius$. Como cada esp\'ecie derivada do merc\'urio possui
+uma temperatura caracter\'istica de volatiliza\c{c}\~ao, a associa\c{c}\~ao
+entre o instante de libera\c{c}\~ao e a temperatura da rampa permite identificar
+as esp\'ecies; para tanto, amostras-padr\~ao com quantidades conhecidas de cada
+esp\'ecie s\~ao utilizadas para calibrar os tempos de sa\'ida da coluna. A
+qualidade da rampa \'e, portanto, um requisito anal\'itico central do processo.
+
+\subsection{Atomiza\c{c}\~ao e detec\c{c}\~ao}
+
+Ap\'os deixar o Tubo U, o fluxo \'e conduzido ao Forno 2, um bloco de
+isolamento cer\^amico com tubos de quartzo envolvidos por um resistor, mantido
+em temperatura fixa de $700\,\celsius$. Nessa temperatura, as esp\'ecies s\~ao
+degradadas (atomizadas) e o merc\'urio \'e convertido \`a forma met\'alica
+elementar, que \'e ent\~ao quantificada por espectrometria de absor\c{c}\~ao
+at\^omica com corre\c{c}\~ao do efeito Zeeman em um detector do tipo Lumex. O
+detector distingue-se por apresentar um longo caminho \'optico (da ordem de
+5~m), obtido por um sistema de espelhos, o que lhe confere limites de detec\c{c}\~ao
+muito menores que os de espectrofot\^ometros convencionais \cite{lumex}.
+
+\section{Automa\c{c}\~ao e supervis\~ao de processos}
+
+A automa\c{c}\~ao de um processo laboratorial envolve a medi\c{c}\~ao de
+vari\'aveis de processo (VP), o processamento dessa informa\c{c}\~ao segundo uma
+estrat\'egia de controle e a atua\c{c}\~ao sobre vari\'aveis manipuladas (VM).
+No sistema em estudo, as VP s\~ao as temperaturas do Tubo U e do Forno 2,
+medidas por termopares; as VM s\~ao as porcentagens de PWM aplicadas aos
+filamentos resistivos; e os atuadores discretos (v\'alvulas e bomba) definem o
+roteamento do fluxo gasoso ao longo das etapas do processo.
+
+Um sistema de \emph{supervis\~ao} adiciona a esse n\'ucleo de controle a
+capacidade de monitorar, registrar e parametrizar o processo por meio de uma
+interface homem-m\'aquina. Em sistemas distribu\'idos modernos, \'e comum
+separar a l\'ogica de alto n\'ivel (supervis\~ao, sequenciamento e interface) da
+execu\c{c}\~ao de campo em tempo real, alocando cada camada a uma plataforma
+adequada. Essa separa\c{c}\~ao melhora a confiabilidade, facilita a manuten\c{c}\~ao
+e reduz o custo do conjunto.
+
+\section{Controle de processos em malha fechada}
+
+\subsection{Conceitos fundamentais}
+
+Em um sistema de controle por realimenta\c{c}\~ao, a vari\'avel de processo
+$y(t)$ \'e comparada com o valor de refer\^encia (setpoint) $r(t)$, gerando um
+sinal de erro $e(t)=r(t)-y(t)$. Um controlador calcula, a partir do erro, a
+vari\'avel manipulada $u(t)$ aplicada ao processo. O objetivo \'e manter $y(t)$
+pr\'oximo de $r(t)$ mesmo na presen\c{c}a de perturba\c{c}\~oes e de incertezas
+no modelo do processo \cite{ogata2010}. A Figura~\ref{fig:malha} ilustra a
+estrutura gen\'erica de uma malha de controle por realimenta\c{c}\~ao.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  font=\small,
+  block/.style={rectangle, draw, minimum width=1.8cm, minimum height=0.9cm,
+                align=center},
+  sum/.style={circle, draw, minimum size=0.6cm, inner sep=0pt},
+  arr/.style={-{Latex[length=2mm]}, thick}
+]
+  \node[sum] (sum) at (0,0) {$-$};
+  \node[block, right=0.9cm of sum] (c) {Controlador\\ PID};
+  \node[block, right=0.9cm of c] (p) {Processo\\ (forno)};
+  \node[circle, draw, inner sep=0pt, minimum size=0.55cm] (s) at (6.2,0) {$\times$};
+  \node[block, below=0.9cm of p, minimum width=1.6cm] (se) {Sensor\\ termopar};
+  \draw[arr] (-2.0,0) -- node[above]{$r(t)$} (sum);
+  \draw[arr] (sum) -- node[above]{$e(t)$} (c);
+  \draw[arr] (c) -- node[above]{$u(t)$} (p);
+  \draw[arr] (p) -- node[above]{$y(t)$} (7.0,0);
+  \draw[arr] (7.0,0) -- (7.0,-1.35) -- (se);
+  \draw[arr] (se) -- node[below]{$y_m(t)$} (-3.9,-1.35) -- (-3.9,-1.05) -- (sum);
+\end{tikzpicture}
+\caption{Estrutura gen\'erica de uma malha de controle por realimenta\c{c}\~ao.}
+\label{fig:malha}
+\par\vspace{2pt}{\footnotesize Fonte: elaborada pelo autor.}
+\end{figure}
+
+\subsection{O controlador PID}
+
+O controlador proporcional-integral-derivativo (PID) \'e o algoritmo de controle
+mais difundido na ind\'ustria. Em sua forma cont\'inua ideal, a sa\'ida \'e dada
+por \cite{astrom2006, ogata2010}:
+\begin{equation}
+  u(t) = K_p \left[ e(t) + \frac{1}{T_i}\int_0^t e(\tau)\,d\tau
+         + T_d \frac{d\,e(t)}{dt} \right],
+  \label{eq:pid}
+\end{equation}
+em que $K_p$ \'e o ganho proporcional, $T_i$ o tempo integral e $T_d$ o tempo
+derivativo. A a\c{c}\~ao proporcional responde ao erro atual; a a\c{c}\~ao
+integral elimina o erro estacion\'ario acumulando o erro ao longo do tempo; e a
+a\c{c}\~ao derivativa antecipa a tend\^encia do erro, contribuindo para a
+estabilidade e o amortecimento da resposta. A sintonia dos par\^ametros $K_p$,
+$T_i$ e $T_d$ deve equilibrar rapidez de resposta, sobressinal e robustez
+\cite{astrom2006}.
+
+Em implementa\c{c}\~oes digitais, o controlador \'e avaliado a cada intervalo de
+amostragem $dt$, e o termo integral \'e aproximado por uma soma. Uma
+preocupa\c{c}\~ao pr\'atica importante \'e o \emph{anti-windup}: quando a
+vari\'avel manipulada satura (por exemplo, no limite m\'aximo do PWM), o termo
+integral n\~ao deve continuar crescendo indefinidamente, pois isso provocaria
+atraso na resposta quando o erro mudasse de sinal. T\'ecnicas de clampagem do
+integrador s\~ao empregadas para evitar esse comportamento \cite{astrom2006}.
+Outra pr\'atica comum \'e aplicar a a\c{c}\~ao derivativa sobre a vari\'avel de
+processo (e n\~ao sobre o erro), evitando o chamado ``derivative kick''
+provocado por degraus no setpoint.
+
+\subsection{Controle de rampa e raz\~ao de taxas}
+
+Em processos cuja grandeza controlada deve seguir uma trajet\'oria no tempo ---
+como a rampa linear de temperatura do Tubo U ---, duas estrat\'egias podem ser
+combinadas. Quando a temperatura medida \'e confi\'avel e o processo pode ser
+linearizado em torno do ponto de opera\c{c}\~ao, um controlador PID em malha
+fechada pode seguir um \emph{setpoint din\^amico}, isto \'e, um valor de
+refer\^encia que varia linearmente com o tempo:
+\begin{equation}
+  r(t) = T_{N_2} + \dot{T}_{\mathrm{des}}\, t,
+  \label{eq:setpoint}
+\end{equation}
+em que $T_{N_2}$ \'e a temperatura inicial (do nitrog\^enio) e $\dot{T}_{\mathrm{des}}$
+\'e a taxa de aquecimento desejada, em $^{\circ}$C/s, calculada pela raz\~ao
+entre a varia\c{c}\~ao total de temperatura e o tempo de rampa:
+\begin{equation}
+  \dot{T}_{\mathrm{des}} = \frac{T_{\mathrm{alvo}} - T_{N_2}}{t_{\mathrm{rampa}}}.
+  \label{eq:taxa}
+\end{equation}
+
+Em situa\c{c}\~oes em que a medi\c{c}\~ao n\~ao \'e confi\'avel (por exemplo,
+abaixo do piso de leitura do termopar), a malha fechada n\~ao pode ser
+empregada com seguran\c{c}a. Nesse caso, uma estrat\'egia de
+\emph{raz\~ao de taxas} pode ser utilizada: conhecida a taxa de aquecimento
+m\'axima que o sistema \'e capaz de produzir em malha aberta
+($\dot{T}_{\mathrm{sist}}$), a vari\'avel manipulada \'e calculada
+proporcionalmente:
+\begin{equation}
+\textstyle
+  VM = \frac{\dot{T}_{\mathrm{des}}}{\dot{T}_{\mathrm{sist}}} \times VM_{\max},
+  \label{eq:razao}
+\end{equation}
+em que $VM_{\max}$ \'e o valor m\'aximo da sa\'ida (por exemplo,
+$255$ em uma sa\'ida PWM de 8~bits). Essa estrat\'egia \'e a adotada no presente
+sistema para a regi\~ao abaixo de $0\,\celsius$, enquanto o PID assume a malha
+fechada acima desse limiar.
+
+\section{M\'aquinas de estado finitas}
+
+Uma m\'aquina de estados finita (FSM) \'e um modelo computacional composto por
+um conjunto finito de estados, um conjunto finito de eventos (entradas) e uma
+fun\c{c}\~ao de transi\c{c}\~ao que determina o pr\'oximo estado a partir do
+estado corrente e do evento recebido \cite{wagner2006}. As FSMs s\~ao
+amplamente utilizadas no controle sequencial de processos, pois permitem
+modelar de forma expl\'icita e verific\'avel as etapas de opera\c{c}\~ao e as
+condi\c{c}\~oes de mudan\c{c}a de etapa.
+
+Em automa\c{c}\~ao, a FSM costuma ser associada a uma \emph{matriz de
+acionamento} dos atuadores, que associa a cada estado o conjunto de sa\'idas
+digitais que devem estar ativas. Essa representa\c{c}\~ao tabular facilita a
+valida\c{c}\~ao do sequenciamento e a detec\c{c}\~ao de conflitos entre
+atuadores (interlocks). O uso de uma FSM tamb\'em favorece o tratamento
+sistem\'atico de situa\c{c}\~oes an\^omalas: a cada estado, eventos de parada ou
+de emerg\^encia podem for\c{c}ar a transi\c{c}\~ao para um estado seguro
+\cite{wagner2006}.
+
+\section{Sistemas embarcados e instrumenta\c{c}\~ao}
+
+\subsection{Aquisi\c{c}\~ao de dados e tempo real}
+
+Um sistema de aquisi\c{c}\~ao de dados (\daq) \'e respons\'avel por
+interconectar o mundo f\'isico (sensores e atuadores) \`a l\'ogica de controle.
+Em processos com requisitos temporais, a capacidade de executar ciclos de
+leitura e escrita com per\'iodo determinado (tempo real) \'e essencial. Neste
+trabalho, o Arduino Uno \'e empregado como \daq de campo: trata-se de uma
+plataforma de baixo custo baseada em um microcontrolador AVR, com pinos de
+entrada/sa\'ida digital, sa\'idas PWM e convers\~ao anal\'ogica, adequada a
+tarefas de tempo real com requisitos moderados \cite{arduino}.
+
+\subsection{Medi\c{c}\~ao de temperatura com termopares}
+
+Os termopares s\~ao sensores de temperatura formados pela jun\c{c}\~ao de dois
+metais distintos, cuja tens\~ao termoel\'etrica depende da diferen\c{c}a de
+temperatura entre a jun\c{c}\~ao de medi\c{c}\~ao e a jun\c{c}\~ao de
+refer\^encia. O termopar tipo K (cromo-alumel) \'e um dos mais utilizados por
+sua ampla faixa de opera\c{c}\~ao e baixo custo. A convers\~ao da tens\~ao
+termoel\'etrica em temperatura digital \'e comumente realizada por circuitos
+integrados com compensa\c{c}\~ao da jun\c{c}\~ao fria, como o MAX6675, que
+entrega a temperatura em um registrador de 12~bits com resolu\c{c}\~ao de
+$0{,}25\,\celsius$ via interface SPI \cite{max6675, nist_its90}.
+
+A interface SPI (\emph{Serial Peripheral Interface}) \'e um barramento
+s\'incrono mestre-escravo que utiliza quatro sinais: clock (SCLK), sa\'ida do
+mestre (MOSI), entrada do mestre (MISO) e sele\c{c}\~ao de chip (CS). No
+sistema, dois m\'odulos conversores --- um para o Tubo U (T1) e outro para o
+Forno 2 (T2) --- compartilham os sinais de clock e de dados e s\~ao
+selecionados individualmente pelos respectivos sinais de chip select.
+
+\subsection{Acionamento de atuadores}
+
+O acionamento das v\'alvulas e da bomba \'e realizado por sinais digitais que
+comandam m\'odulos de rel\'e, enquanto o acionamento dos fornos \'e feito por
+rel\'es de estado s\'olido (SSR) modulados por PWM. O uso de rel\'es isola
+eletricamente a eletr\^onica de controle das cargas de pot\^encia (resistores de
+aquecimento em rede de 110~VCA). A bomba perist\'altica empregada possui
+comportamento de \emph{trava por pulso} (toggle): cada pulso de dura\c{c}\~ao
+definida alterna o estado f\'isico ligado/desligado, que \'e mantido pela pr\'opria
+bomba. Esse detalhe de hardware condiciona a estrat\'egia de software, conforme
+discutido no Cap\'itulo~5.
+
+\section{Comunica\c{c}\~ao entre sistemas}
+
+A comunica\c{c}\~ao entre o n\'ucleo de supervis\~ao (Raspberry Pi) e o \daq
+(Arduino) \'e realizada por um enlace serial ass\'incrono (UART/USB) com
+conte\'udo estruturado em JSON (\emph{JavaScript Object Notation}), um formato
+textual de interc\^ambio de dados definido pelo padr\~ao RFC 8259
+\cite{bray2017}. O uso de JSON confere legibilidade e facilita a depura\c{c}\~ao
+e a evolu\c{c}\~ao do protocolo, em troca de um custo computacional maior que o
+de formatos bin\'arios. Os pacotes s\~ao delimitados por quebra de linha
+(\emph{line-delimited JSON}), o que simplifica o parsing no firmware.
+
+Para a comunica\c{c}\~ao entre a IHM Web e o backend, utilizam-se dois
+mecanismos complementares: a arquitetura REST, baseada no protocolo HTTP, para
+opera\c{c}\~oes de configura\c{c}\~ao e de comando pontual, e o protocolo
+WebSocket, definido pelo RFC 6455, para a transmiss\~ao cont\'inua de telemetria
+em tempo real \cite{fette2011}. O WebSocket estabelece um canal bidirecional
+persistente entre o navegador e o servidor, adequado a aplica\c{c}\~oes que
+exigem baixa lat\^encia e atualiza\c{c}\~oes peri\'odicas, como o monitoramento
+de vari\'aveis de processo.
+
+\section{Interface homem-m\'aquina Web}
+
+A interface homem-m\'aquina (\ihm) \'e o ponto de contato entre o operador e o
+processo. Uma \ihm eficaz deve apresentar o estado do processo de forma clara,
+permitir a execu\c{c}\~ao de comandos com baixa probabilidade de erro e dar
+acesso \`a parametriza\c{c}\~ao do m\'etodo. No presente trabalho, a \ihm \'e
+uma aplica\c{c}\~ao Web desenvolvida em React e TypeScript \cite{react}, servida
+pelo pr\'oprio backend e consumindo a API REST e o WebSocket descritos acima.
+Entre os elementos visuais empregados destacam-se o Diagrama de Tempos (que
+representa a matriz de acionamento ao longo do ciclo), os gr\'aficos de
+tend\^encia de temperatura e os pain\'eis de controle e de configura\c{c}\~ao,
+detalhados no Cap\'itulo~5.
+
+\section{Seguran\c{c}a funcional}
+
+Em processos que manipulam temperaturas extremas e nitrog\^enio l\'iquido, a
+seguran\c{c}a funcional deve ser considerada desde o projeto. Dois conceitos
+s\~ao centrais neste trabalho:
+
+\begin{itemize}
+  \item \textbf{Safe State (estado seguro):} um estado predefinido no qual todas
+  as sa\'idas perigosas s\~ao desenergizadas. No sistema, o Safe State mant\'em
+  as v\'alvulas e a bomba desligadas, os fornos com PWM nulo e o pist\~ao
+  criog\^enico na posi\c{c}\~ao que mant\'em o copo afastado do Tubo U.
+  \item \textbf{Watchdog:} um mecanismo de supervis\~ao de temporiza\c{c}\~ao que
+  detecta a aus\^encia de ``batidas'' peri\'odicas (indicativas de que o sistema
+  est\'a operando normalmente) e dispara uma a\c{c}\~ao de seguran\c{c}a quando
+  elas cessam. No sistema, um watchdog no firmware desliga os fornos se nenhum
+  pacote v\'alido for recebido dentro de um intervalo m\'aximo, e um watchdog
+  equivalente no backend comuta a FSM para o Safe State na aus\^encia de
+  resposta do \daq.
+\end{itemize}
+
+Esses mecanismos garantem que uma falha de comunica\c{c}\~ao --- condi\c{c}\~ao
+que n\~ao pode ser descartada em enlaces seriais --- n\~ao evolua para dano ao
+equipamento ou risco \`a seguran\c{c}a.
+
+\section{Considera\c{c}\~oes finais do cap\'itulo}
+
+A fundamenta\c{c}\~ao apresentada estabelece a base conceitual para o
+desenvolvimento descrito nos pr\'oximos cap\'itulos: o entendimento do processo
+qu\'imico define os requisitos de sequenciamento e de rampa; a teoria de controle
+embasa a estrat\'egia PID mista; e os conceitos de sistemas embarcados, de
+comunica\c{c}\~ao e de \ihm fundamentam a arquitetura mestre-escravo adotada. O
+pr\'oximo cap\'itulo situa o trabalho em rela\c{c}\~ao a outros sistemas e
+abordagens descritos na literatura.

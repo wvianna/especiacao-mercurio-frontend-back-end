@@ -1,0 +1,165 @@
+% ======================================================================
+% CAPÍTULO 4 — METODOLOGIA
+% ======================================================================
+\chapter{METODOLOGIA}
+
+Este capítulo descreve a metodologia adotada no desenvolvimento do sistema,
+abrangendo a natureza da pesquisa, a estratégia de desenvolvimento, os materiais
+utilizados, os procedimentos executados, o ambiente de validação e os critérios
+de aceitação. A descrição segue o princípio de distinguir o que foi planejado do
+que foi efetivamente executado.
+
+\section{Natureza e abordagem da pesquisa}
+
+O trabalho caracteriza-se como uma pesquisa aplicada, de natureza experimental,
+com abordagem predominantemente quantitativa. O objetivo é gerar um artefato
+tecnológico --- um sistema de automação e supervisão --- e avaliá-lo quanto ao
+atendimento de requisitos funcionais e de segurança. A estruturação do texto
+segue as normas de documentação de trabalhos acadêmicos \cite{abnt14724,
+abnt6023, abnt10520}.
+
+A estratégia metodológica combina duas práticas de engenharia de software:
+(i) a \emph{especificação dirigida}, em que os requisitos e os contratos de
+interface são consolidados antes da implementação; e (ii) o \emph{desenvolvimento
+orientado a testes} (TDD), em que os critérios de aceitação são traduzidos em
+testes automatizados antes da codificação de cada funcionalidade
+\cite{beck2002}. Essa combinação visa garantir a rastreabilidade entre
+requisitos, implementação e validação.
+
+\section{Etapas do desenvolvimento}
+
+O desenvolvimento foi organizado nas seguintes etapas:
+
+\begin{enumerate}[label=\arabic*)]
+  \item \textbf{Levantamento e análise de requisitos:} consolidação da
+  documentação técnica do processo (especificação do sistema e requisitos de
+  automação), identificação das figuras de referência do processo, da matriz de
+  acionamento dos atuadores e dos parâmetros de controle;
+  \item \textbf{Definição da arquitetura:} escolha da topologia mestre-escravo,
+  definição dos módulos de software e firmware e dos contratos de interface
+  (protocolo serial e API);
+  \item \textbf{Desenvolvimento incremental do firmware:} implementação e teste
+  da camada \daq --- acionamento de atuadores, leitura de termopares, protocolo
+  JSON e watchdog;
+  \item \textbf{Desenvolvimento incremental do backend:} implementação da FSM,
+  dos controladores PID e da rampa, da persistência de parâmetros, do loop de
+  controle a 4~Hz e da API REST/WebSocket;
+  \item \textbf{Desenvolvimento incremental da IHM Web:} implementação dos
+  componentes de monitoramento, do Diagrama de Tempos, dos gráficos de tendência
+  e dos painéis de controle e configuração;
+  \item \textbf{Validação:} execução de testes unitários, de integração,
+  funcionais e de segurança, com correção iterativa.
+\end{enumerate}
+
+Cada etapa foi conduzida de forma incremental, com validação contínua por meio de
+testes automatizados, e os contratos de dados (JSON de escrita/leitura,
+telemetria) foram definidos antecipadamente e utilizados como especificação de
+interface entre os módulos.
+
+\section{Materiais e ambiente}
+
+\subsection{Hardware de referência}
+
+O processo físico de referência é composto por: frasco de reação com agitação
+por gás hélio; bomba peristáltica para injeção de TEBS; v\'alvulas solen\'oides
+SV1 a SV5; dissecante de n\'afion; Tubo U com filamento resistivo (Forno 1) e
+copo de nitrog\^enio l\'iquido com pist\~ao criog\^enico; Forno 2 (atomizador);
+termopares tipo K; e detector Lumex. O acionamento das v\'alvulas e da bomba \'e
+intermediado por m\'odulos de rel\'e, e o acionamento dos fornos, por rel\'es de
+estado s\'olido \cite{arduino, lumex}.
+
+A plataforma de controle \'e composta por um Raspberry Pi (execu\c{c}\~ao do
+backend e da IHM) e por um Arduino Uno (execu\c{c}\~ao do \daq de campo). Os
+termopares s\~ao lidos por conversores do tipo MAX6675/MAX31855 via SPI
+\cite{max6675}. A identifica\c{c}\~ao exata do circuito integrado empregado no
+hardware \'e um item a confirmar com a documenta\c{c}\~ao f\'isica do
+equipamento.
+
+\subsection{Software e ferramentas}
+
+A Tabela~\ref{tab:materiais} resume o ambiente de software utilizado.
+
+\begin{table}[htbp]
+\centering
+\caption{Ambiente de software e ferramentas empregados no desenvolvimento.}
+\label{tab:materiais}
+\begin{tabular}{lll}
+\toprule
+\textbf{Componente} & \textbf{Tecnologia} & \textbf{Função} \\
+\midrule
+Backend & Python 3.11+; FastAPI & Lógica de supervisão, FSM, PID, API/WS \\
+Firmware & C++; PlatformIO; ArduinoJson & Firmware do DAQ (Arduino Uno) \\
+IHM Web & React; TypeScript; Vite & Interface de supervisão no navegador \\
+Testes & pytest; PlatformIO test; Vitest & Testes automatizados das camadas \\
+Simulação & socat + simulador do DAQ & Enlace serial virtual sem hardware \\
+\bottomrule
+\end{tabular}
+\par\vspace{2pt}{\footnotesize Fonte: elaborada pelo autor com base na documenta\c{c}\~ao t\'ecnica do projeto.}
+\end{table}
+
+\section{Ambiente de valida\c{c}\~ao}
+
+A valida\c{c}\~ao foi realizada em ambiente de desenvolvimento, sem o hardware
+f\'isico do processo, por tr\^es estrat\'egias complementares:
+
+\begin{itemize}
+  \item \textbf{Testes unit\'arios:} valida\c{c}\~ao isolada de cada m\'odulo
+  (FSM, PID, rampa, persist\^encia, parser JSON do firmware, watchdog);
+  \item \textbf{Testes de integra\c{c}\~ao e funcionais:} valida\c{c}\~ao da
+  comunica\c{c}\~ao serial a 4~Hz e do ciclo completo $T_0 \to T_3$, verificando
+  a matriz de atuadores em cada fase. Para tanto, um par de portas seriais
+  virtuais \'e criado com \texttt{socat}, conectando o backend a um simulador do
+  \daq que emula o protocolo JSON;
+  \item \textbf{Testes de seguran\c{c}a:} simula\c{c}\~ao de perda de
+  comunica\c{c}\~ao para confirmar a atua\c{c}\~ao do watchdog e o retorno ao
+  Safe State.
+\end{itemize}
+
+O uso de um simulador de hardware permitiu exercitar o ciclo de controle completo
+e validar o comportamento temporal e a seguran\c{c}a sem depender da bancada
+f\'isica, o que \'e adequado \`a fase de desenvolvimento de software. A
+valida\c{c}\~ao em bancada com o processo real, incluindo a calibra\c{c}\~ao da
+curva de aquecimento e a verifica\c{c}\~ao experimental da rampa, permanece como
+etapa de continuidade.
+
+\section{Vari\'aveis, par\^ametros e crit\'erios de aceita\c{c}\~ao}
+
+As principais vari\'aveis de processo s\~ao as temperaturas do Tubo U ($T_1$) e
+do Forno 2 ($T_2$); as vari\'aveis manipuladas s\~ao as sa\'idas PWM ($u$ e
+$f_2$); e as sa\'idas discretas s\~ao as v\'alvulas SV1 a SV5 e a bomba. Os
+par\^ametros configur\'aveis do m\'etodo s\~ao os ganhos PID de cada forno, os
+tempos $t_1$, $t_2$ e $t_3$, o tempo de rampa, a temperatura do nitrog\^enio, a
+temperatura alvo do Tubo U e o setpoint do Forno 2.
+
+A Tabela~\ref{tab:criterios} consolida os crit\'erios de aceita\c{c}\~ao
+definidos para a valida\c{c}\~ao do sistema, conforme a documenta\c{c}\~ao de
+requisitos.
+
+\begin{table}[htbp]
+\centering
+\caption{Crit\'erios de aceita\c{c}\~ao e m\'etricas de valida\c{c}\~ao do sistema.}
+\label{tab:criterios}
+\begin{tabular}{p{4.6cm}p{4.6cm}p{5.4cm}}
+\toprule
+\textbf{M\'etrica} & \textbf{Alvo} & \textbf{Forma de medi\c{c}\~ao} \\
+\midrule
+Linearidade da rampa (Tubo U) & Desvio $\le \pm 2\,\celsius$ do SP & Curva VP $\times$ SP em bancada \\
+Estabilidade do Forno 2 & $\pm 5\,\celsius$ em torno de 700\,\celsius & Curva VP $\times$ SP em bancada \\
+Disponibilidade da comunica\c{c}\~ao & 100\% em 4~h de estresse a 4~Hz & Teste de estresse integrado \\
+Persist\^encia de par\^ametros & 100\% \'integra ap\'os rein\'icio & Teste funcional \\
+Seguran\c{c}a (watchdog) & Fornos desligados em $\le 1$~s & Teste de perda de serial \\
+\bottomrule
+\end{tabular}
+\par\vspace{2pt}{\footnotesize Fonte: elaborada pelo autor com base na documenta\c{c}\~ao de requisitos do sistema.}
+\end{table}
+
+\section{Planejado versus executado}
+
+No planejamento, a valida\c{c}\~ao seria conclu\'ida com a verifica\c{c}\~ao em
+bancada das curvas reais de temperatura e da calibra\c{c}\~ao da curva de
+aquecimento do Tubo U. Na execu\c{c}\~ao desta fase do trabalho, a valida\c{c}\~ao
+foi realizada integralmente em ambiente simulado (testes automatizados), tendo
+em vista a indisponibilidade da bancada f\'isica no per\'iodo de desenvolvimento.
+Essa limita\c{c}\~ao \'e explicitada e registrada como etapa de continuidade,
+n\~ao comprometendo a valida\c{c}\~ao da l\'ogica de controle e dos mecanismos de
+seguran\c{c}a, que independem do hardware para sua correta execu\c{c}\~ao.

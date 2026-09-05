@@ -1,0 +1,110 @@
+% ======================================================================
+% CAPÍTULO 7 — CONCLUSÃO
+% ======================================================================
+\chapter{CONCLUSÃO}
+
+Este capítulo retoma o problema e os objetivos propostos na introdução, sintetiza
+as contribuições do trabalho, apresenta as limitações e indica direções para
+trabalhos futuros.
+
+\section{Síntese do trabalho}
+
+Este trabalho apresentou o projeto e a implementação de um sistema de automação
+e supervisão para a preparação de amostras em especiação de mercúrio, concebido
+para substituir um sistema legado baseado em LabVIEW. A solução adota uma
+arquitetura mestre-escravo composta por um Raspberry Pi (lógica de alto nível em
+Python), um Arduino Uno (aquisição de dados em tempo real) e uma IHM Web em
+React e TypeScript, integrados por um protocolo JSON a 4~Hz.
+
+A hipótese de trabalho foi confirmada no nível de validação alcançado: a
+arquitetura proposta atende aos requisitos funcionais e de segurança definidos,
+proporcionando controle sequenciado do processo por máquina de estados finita,
+controle PID misto da temperatura, persistência auditável dos parâmetros e
+parada segura automática por watchdog duplo. A validação por testes
+automatizados --- 67 testes aprovados distribuídos entre backend, firmware e IHM
+Web --- demonstrou a correção da lógica de controle, a integração entre as
+camadas e a efetividade dos mecanismos de segurança no nível de software.
+
+\section{Atendimento aos objetivos}
+
+Retomando os objetivos específicos estabelecidos no Capítulo~1:
+
+\begin{enumerate}[label=\arabic*)]
+  \item O processo foi modelado em uma FSM com os estados \texttt{SAFE},
+  \texttt{T0\_DERIV} a \texttt{T3\_PURGA} e \texttt{MANUAL}, e a matriz de
+  acionamento dos atuadores foi implementada e validada por testes;
+  \item O controle PID misto do Tubo U --- razão de taxas abaixo de
+  $0\,\celsius$ e PID em malha fechada acima --- e o controle do Forno 2 a
+  $700\,\celsius$ foram implementados e verificados por testes de unidade;
+  \item O protocolo JSON estruturado entre Raspberry Pi e Arduino, com handshake
+  de parametrização e pacotes de escrita e leitura a 4~Hz, foi definido e
+  implementado em ambas as plataformas;
+  \item O firmware do DAQ foi desenvolvido com leitura de termopares via SPI,
+  acionamento de atuadores (incluindo o tratamento da bomba por pulso) e
+  watchdog de segurança;
+  \item A IHM Web foi desenvolvida com monitoramento em tempo real, Diagrama de
+  Tempos, gráficos de tendência e painéis de controle e de configuração;
+  \item A persistência atômica dos parâmetros do método em JSON, com backup
+  rotativo e validação de faixas, foi implementada e testada;
+  \item A validação foi conduzida por testes unitários, de integração,
+  funcionais e de segurança, seguindo a estratégia de desenvolvimento orientado
+  a testes.
+\end{enumerate}
+
+Dessa forma, o objetivo geral --- projetar e implementar um sistema de automação
+e supervisão para a preparação de amostras em especiação de mercúrio, com
+parâmetros persistentes e segurança operacional --- foi alcançado no âmbito do
+escopo definido.
+
+\section{Contribuições}
+
+As principais contribuições deste trabalho são:
+
+\begin{itemize}
+  \item a modelagem explícita e verificável do sequenciamento do processo em uma
+  máquina de estados finita, com matriz de acionamento documentada;
+  \item a estratégia de controle misto da rampa do Tubo U, que contorna a
+  limitação de leitura do termopar na região criogênica pela razão de taxas e
+  emprega PID em malha fechada na região de leitura confiável;
+  \item a arquitetura mestre-escravo de baixo custo com separação entre a lógica
+  de supervisão e a execução em tempo real;
+  \item o protocolo de comunicação JSON aberto e legível, facilitando
+  depuração, manutenção e evolução;
+  \item o projeto de segurança em camadas, com estado seguro por padrão e
+  watchdog duplo, suprindo uma lacuna do sistema legado;
+  \item a validação sistemática por testes automatizados, conferindo
+  rastreabilidade entre requisitos, implementação e resultados.
+\end{itemize}
+
+\section{Limitações}
+
+As limitações deste trabalho decorrem, principalmente, da indisponibilidade da
+bancada física durante o desenvolvimento. A validação foi realizada em ambiente
+simulado; os critérios de desempenho térmico --- linearidade da rampa e
+estabilidade do Forno 2 --- e a calibração da curva de aquecimento do Tubo U
+permanecem pendentes de verificação experimental. Registra-se, ainda, que
+questões como a identificação exata do conversor de termopar e a definição da
+margem de proteção de temperatura dependem da documentação e das decisões do
+responsável técnico do equipamento.
+
+\section{Trabalhos futuros}
+
+Como desdobramentos naturais deste trabalho, sugere-se:
+
+\begin{enumerate}[label=\arabic*)]
+  \item validar o sistema em bancada com o processo físico, calibrando a curva
+  de aquecimento do Tubo U e verificando a linearidade da rampa e a estabilidade
+  do Forno 2;
+  \item implementar a integração automática com o detector Lumex e a exportação
+  das curvas geradas (CSV/PDF) para registro e auditoria;
+  \item adicionar autenticação de operadores e trilha de auditoria das ações;
+  \item desenvolver um simulador de processo para treinamento de operadores;
+  \item implementar a sintonização automática (auto-tune) dos controladores PID;
+  \item avaliar a substitui\c{c}\~ao do bit-bang SPI por hardware SPI nativo e a
+  inclus\~ao de medi\c{c}\~ao redundante de temperatura para maior robustez.
+\end{enumerate}
+
+Em síntese, o trabalho atingiu o objetivo de modernizar a automação e a
+supervisão do processo de preparação de amostras para especiação de mercúrio,
+entregando uma solução modular, segura e validada por testes, que estabelece uma
+base sólida para a validação experimental e para a evolução contínua do sistema.

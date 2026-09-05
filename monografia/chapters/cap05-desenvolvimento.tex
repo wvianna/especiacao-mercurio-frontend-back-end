@@ -1,0 +1,494 @@
+% ======================================================================
+% CAPÍTULO 5 — DESENVOLVIMENTO
+% ======================================================================
+\chapter{DESENVOLVIMENTO}
+
+Este capítulo descreve a implementação do sistema de automação e supervisão,
+organizada em camadas: arquitetura geral, máquina de estados finita, controle
+PID e rampa, firmware do DAQ, protocolo de comunicação, loop de controle,
+persistência, backend (API e WebSocket), IHM Web e segurança. As referências ao
+código indicam a localização dos módulos no repositório do projeto, preservando
+a rastreabilidade entre a descrição e a implementação.
+
+\section{Visão geral da arquitetura}
+
+O sistema adota uma topologia mestre-escravo. O \emph{mestre} é o Raspberry Pi,
+que executa o backend em Python: a máquina de estados, os controladores, a
+persistência de parâmetros, a API REST/WebSocket e o serviço da IHM. O
+\emph{escravo} é o Arduino Uno, que opera como módulo de aquisição de dados
+(\daq) em tempo real: aplica os comandos de atuadores, gera os PWM dos fornos e
+lê os termopares via SPI. A comunicação entre as duas plataformas é feita por um
+enlace serial USB com pacotes JSON em ciclo de 4~Hz. A Figura~\ref{fig:arq}
+apresenta essa arquitetura e o fluxo de dados entre as camadas.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  font=\small,
+  box/.style={rectangle, draw, minimum width=3.0cm, minimum height=1.1cm,
+              align=center, rounded corners=2pt},
+  arr/.style={-{Latex[length=2mm]}, thick}
+]
+  \node[box] (ihm) at (0,2.2) {IHM Web\\ (React + TypeScript)};
+  \node[box] (be)  at (0,0) {Backend (Raspberry Pi)\\ FSM + PID + persist\^encia};
+  \node[box] (st)  at (5.2,0) {Arquivo\\ \texttt{params.json}};
+  \node[box] (daq) at (0,-2.4) {\daq{} Arduino Uno\\ atuadores + SPI + watchdog};
+  \node[box] (pr)  at (0,-4.6) {Processo f\'isico\\ v\'alvulas, bomba, fornos,\\ termopares};
+  \draw[arr,<->] (ihm) -- node[right]{HTTP + WebSocket} (be);
+  \draw[arr,<->] (be) -- node[above]{JSON serial 4~Hz} (daq);
+  \draw[arr] (be) -- node[above]{JSON em disco} (st);
+  \draw[arr,<->] (daq) -- node[right]{sinais} (pr);
+\end{tikzpicture}
+\caption{Arquitetura mestre-escravo e fluxo de dados do sistema.}
+\label{fig:arq}
+\par\vspace{2pt}{\footnotesize Fonte: elaborada pelo autor com base na implementa\c{c}\~ao do projeto.}
+\end{figure}
+
+\section{M\'aquina de estados finita}
+
+\subsection{Estados e eventos}
+
+O processo foi modelado como uma FSM com os estados apresentados na
+Tabela~\ref{tab:estados}. Cada fase do ciclo autom\'atico corresponde a um
+intervalo do processo qu\'imico descrito no Cap\'itulo~2.
+
+\begin{table}[htbp]
+\centering
+\caption{Estados da FSM e respectivas fases do processo.}
+\label{tab:estados}
+\begin{tabular}{llp{8cm}}
+\toprule
+\textbf{Estado} & \textbf{Identificador} & \textbf{Descri\c{c}\~ao} \\
+\midrule
+Seguro & \texttt{SAFE} & Estado inicial: todas as sa\'idas desligadas e fornos a 0\% \\
+Deriva\c{c}\~ao & \texttt{T0\_DERIV} & Deriva\c{c}\~ao / criofocaliza\c{c}\~ao ($T_0$) \\
+Estabiliza\c{c}\~ao & \texttt{T1\_STAB} & Estabiliza\c{c}\~ao t\'ermica ($T_1$) \\
+Rampa & \texttt{T2\_RAMPA} & Rampa de aquecimento / purga do Tubo U ($T_2$) \\
+Purga & \texttt{T3\_PURGA} & Purga total do sistema ($T_3$) \\
+Manual & \texttt{MANUAL} & Acionamento direto dos atuadores \\
+\bottomrule
+\end{tabular}
+\par\vspace{2pt}{\footnotesize Fonte: elaborada pelo autor com base no m\'odulo \texttt{fsm.py}.}
+\end{table}
+
+A FSM responde aos eventos \texttt{start}, \texttt{stop}, \texttt{emergency},
+\texttt{manual} e \texttt{auto}. O evento \texttt{start} inicia o ciclo a partir
+do estado seguro; \texttt{stop} e \texttt{emergency} for\c{c}am o retorno ao
+estado seguro; \texttt{manual} conduz ao modo de opera\c{c}\~ao manual; e
+\texttt{auto} retorna do modo manual ao estado seguro, habilitando um novo ciclo
+autom\'atico. A Figura~\ref{fig:fsm} ilustra o diagrama de transi\c{c}\~oes.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  font=\small,
+  st/.style={rectangle, draw, rounded corners=3pt, minimum width=1.6cm,
+             minimum height=0.7cm, align=center},
+  arr/.style={-{Latex[length=2mm]}, thick}
+]
+  \node[st] (safe) at (0,0) {SAFE};
+  \node[st] (t0)   at (3.2,0) {T0\_DERIV};
+  \node[st] (t1)   at (6.0,0) {T1\_STAB};
+  \node[st] (t2)   at (8.8,0) {T2\_RAMPA};
+  \node[st] (t3)   at (11.6,0) {T3\_PURGA};
+  \draw[arr] (safe) -- node[above,font=\scriptsize]{start} (t0);
+  \draw[arr] (t0)   -- node[above,font=\scriptsize]{tempo} (t1);
+  \draw[arr] (t1)   -- node[above,font=\scriptsize]{tempo} (t2);
+  \draw[arr] (t2)   -- node[above,font=\scriptsize]{tempo} (t3);
+  % retorno do fim do ciclo (T3 -> SAFE), por baixo da linha de estados
+  \draw[arr] (t3.south) -- ++(0,-0.7) -| (safe.south);
+  \node[font=\scriptsize] at (5.4,-0.95) {fim do ciclo};
+  % parada/emergência pode ocorrer em qualquer fase (arco superior tracejado)
+  \draw[arr, dashed] (t3.north) .. controls (8.2,1.7) and (1.4,1.7) ..
+    node[above,font=\scriptsize]{stop/emerg\^encia} (safe.north);
+\end{tikzpicture}
+\caption{Diagrama de transi\c{c}\~oes da m\'aquina de estados do processo.}
+\label{fig:fsm}
+\par\vspace{2pt}{\footnotesize Fonte: elaborada pelo autor com base no m\'odulo \texttt{fsm.py}.}
+\end{figure}
+
+Na implementa\c{c}\~ao, as transi\c{c}\~oes temporais s\~ao avaliadas no ciclo de
+controle a 4~Hz: cada estado acumula o tempo decorrido e transiciona ao atingir
+a dura\c{c}\~ao configurada. Os eventos \texttt{stop} e \texttt{emergency}
+podem ocorrer a qualquer momento e t\^em prioridade sobre o sequenciamento
+normal.
+
+\subsection{Matriz de acionamento}
+
+A cada estado da FSM \'e associada uma \emph{matriz de acionamento} que define o
+estado l\'ogico das sa\'idas discretas (v\'alvulas SV1 a SV5 e bomba). A
+Tabela~\ref{tab:matriz} apresenta a matriz implementada, na qual o valor 1
+indica atuador acionado.
+
+\begin{table}[htbp]
+\centering
+\caption{Matriz de acionamento dos atuadores por fase do ciclo.}
+\label{tab:matriz}
+\begin{tabular}{lcccccc}
+\toprule
+\textbf{Fase} & \textbf{SV1} & \textbf{SV2} & \textbf{SV3} & \textbf{SV4} & \textbf{SV5} & \textbf{Bomba} \\
+\midrule
+$T_0$ (deriva\c{c}\~ao/criofocaliza\c{c}\~ao) & 1 & 0 & 0 & 0 & 1 & 1 \\
+$T_1$ (estabiliza\c{c}\~ao) & 1 & 0 & 0 & 0 & 1 & 0 \\
+$T_2$ (rampa/purga) & 1 & 0 & 0 & 0 & 0 & 0 \\
+$T_3$ (purga total) & 0 & 1 & 1 & 1 & 0 & 0 \\
+SAFE & 0 & 0 & 0 & 0 & 0 & 0 \\
+\bottomrule
+\end{tabular}
+\par\vspace{2pt}{\footnotesize Fonte: elaborada pelo autor com base no m\'odulo \texttt{fsm.py}.}
+\end{table}
+
+A interpreta\c{c}\~ao qu\'imica da matriz \'e direta: em $T_0$ e $T_1$ a
+v\'alvula de h\'elio (SV1) permanece aberta para o arraste, o pist\~ao
+criog\^enico (SV5) mant\'em o copo de nitrog\^enio elevado e a bomba injeta o
+TEBS apenas em $T_0$; em $T_2$ o copo \'e abaixado (SV5 = 0) e inicia-se a rampa;
+em $T_3$ as v\'alvulas SV2, SV3 e SV4 s\~ao acionadas para a purga do Tubo U e do
+dissecante, com o h\'elio e os fornos desligados.
+
+A dura\c{c}\~ao de cada fase \'e definida pelos par\^ametros persistidos do
+m\'etodo, conforme a Tabela~\ref{tab:duracoes}. \'E importante destacar a
+nomenclatura: os par\^ametros $t_1$, $t_2$ e $t_3$ s\~ao as dura\c{c}\~oes das
+fases $T_0$, $T_1$ e $T_3$, respectivamente, enquanto a fase $T_2$ tem dura\c{c}\~ao
+igual ao tempo de rampa configurado.
+
+\begin{table}[htbp]
+\centering
+\caption{Correspond\^encia entre par\^ametros persistidos e dura\c{c}\~ao das fases.}
+\label{tab:duracoes}
+\begin{tabular}{llc}
+\toprule
+\textbf{Par\^ametro} & \textbf{Fase} & \textbf{Valor padr\~ao (s)} \\
+\midrule
+\texttt{times\_s.t1} & $T_0$ (deriva\c{c}\~ao/criofocaliza\c{c}\~ao) & 60 \\
+\texttt{times\_s.t2} & $T_1$ (estabiliza\c{c}\~ao t\'ermica) & 360 \\
+\texttt{ramp.time\_s} & $T_2$ (rampa de temperatura) & 300 \\
+\texttt{times\_s.t3} & $T_3$ (purga total) & 60 \\
+\bottomrule
+\end{tabular}
+\par\vspace{2pt}{\footnotesize Fonte: elaborada pelo autor com base no m\'odulo \texttt{fsm.py} e nos dados padr\~ao.}
+\end{table}
+
+\section{Controle PID e rampa do Tubo U}
+
+\subsection{Controlador PID do Forno 2}
+
+O Forno 2 (atomizador) opera em malha fechada com setpoint fixo de
+$700\,\celsius$ durante as fases $T_0$ a $T_2$, sendo desligado na purga ($T_3$).
+O controlador implementa a forma discreta P+I com anti-windup por clampagem do
+integrador e deriva\c{c}\~ao sobre a vari\'avel de processo, conforme discutido
+na Se\c{c}\~ao~2.5. Os ganhos padr\~ao do Forno 2 s\~ao
+$K_p = 44{,}67$, $T_i = 0{,}18$~min e $T_d = 0$. A sa\'ida \'e limitada \`a
+faixa de 0 a 255 (PWM de 8~bits).
+
+\subsection{Controlador do Tubo U (Forno 1)}
+
+O controle do Tubo U combina duas estrat\'egias, selecionadas pela temperatura
+medida $T_1$, conforme a Figura~\ref{fig:decisao}:
+
+\begin{itemize}
+  \item \textbf{Regi\~ao abaixo de $0\,\celsius$:} a medi\c{c}\~ao do termopar
+  n\~ao \'e confi\'avel pr\'oximo ao piso de leitura. A vari\'avel manipulada \'e
+  calculada pela raz\~ao entre a taxa de aquecimento desejada pelo operador e a
+  taxa de aquecimento do sistema (Equa\c{c}\~ao~\ref{eq:razao}), em malha aberta;
+  \item \textbf{Regi\~ao acima de $0\,\celsius$:} um controlador PID em malha
+  fechada segue o setpoint din\^amico da rampa (Equa\c{c}\~ao~\ref{eq:setpoint}),
+  que cresce linearmente de $-50\,\celsius$ at\'e o alvo de $230\,\celsius$.
+\end{itemize}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  font=\small,
+  d/.style={diamond, draw, aspect=2, minimum width=2.6cm, align=center},
+  r/.style={rectangle, draw, rounded corners=2pt, minimum width=3.4cm,
+            minimum height=0.9cm, align=center},
+  arr/.style={-{Latex[length=2mm]}, thick}
+]
+  \node[d] (dec) at (0,0) {$T_1 < 0\,\celsius$?};
+  \node[r] (sim) at (-5.2,-2.2) {Malha aberta\\ VM $=$ raz\~ao de taxas};
+  \node[r] (pid) at (5.2,-2.2) {Malha fechada\\ PID com setpoint din\^amico};
+  \draw[arr] (0,1.4) -- (dec);
+  \draw[arr] (dec) -- node[above]{sim} (sim);
+  \draw[arr] (dec) -- node[above]{n\~ao} (pid);
+\end{tikzpicture}
+\caption{Estrat\'egia de controle do Tubo U em fun\c{c}\~ao da temperatura medida.}
+\label{fig:decisao}
+\par\vspace{2pt}{\footnotesize Fonte: elaborada pelo autor com base no m\'odulo \texttt{ramp.py}.}
+\end{figure}
+
+A taxa de aquecimento desejada \'e calculada continuamente a partir dos
+par\^ametros do m\'etodo (Equa\c{c}\~ao~\ref{eq:taxa}) e \'e o valor exibido na
+IHM como coeficiente de aquecimento, em $^{\circ}$C/s. A taxa de aquecimento do
+sistema, empregada na raz\~ao de taxas, \'e um par\^ametro de calibra\c{c}\~ao
+obtido em bancada a partir da curva ``Taxa de aquecimento $\times$ \% de PWM'' e
+informado \`a l\'ogica de rampa; na aus\^encia de calibra\c{c}\~ao, utiliza-se a
+pr\'opria taxa desejada, o que resulta em a\c{c}\~ao proporcional de 100\% do
+PWM na regi\~ao de malha aberta (a confirmar em bancada).
+
+\section{Firmware do DAQ}
+
+\subsection{Organiza\c{c}\~ao do firmware}
+
+O firmware do Arduino \'e organizado em tr\^es camadas: (i) c\'odigo de
+aplica\c{c}\~ao em \texttt{firmware/}\allowbreak\texttt{src}, incluindo o mapeamento de pinos, o
+driver de atuadores e o leitor de termopares; e (ii) biblioteca port\'avel
+\texttt{daqcore}, contendo o parser JSON, o watchdog e a l\'ogica de pulso da
+bomba, projetada para ser testada tamb\'em em ambiente host (sem hardware). Essa
+separabilidade \'e um requisito da estrat\'egia de testes adotada.
+
+\subsection{Mapeamento de pinos}
+
+A Tabela~\ref{tab:pinos} apresenta o mapeamento de I/O do Arduino Uno.
+
+\begin{table}[htbp]
+\centering
+\caption{Mapeamento de pinos do Arduino Uno.}
+\label{tab:pinos}
+\begin{tabular}{llp{8cm}}
+\toprule
+\textbf{Componente} & \textbf{Pino} & \textbf{Fun\c{c}\~ao} \\
+\midrule
+Bomba perist\'altica & 2 & Inje\c{c}\~ao de TEBS (trava por pulso) \\
+SV3 & 3 & Direcionamento vapor/Tubo U \\
+SV2 & 4 & Agita\c{c}\~ao / purga 1 \\
+SV4 & 5 & Purga 2 (n\'afion) \\
+SV5 (pist\~ao) & 6 & Copo de nitrog\^enio \\
+SV1 (h\'elio) & 7 & G\'as de arraste \\
+CLK & 8 & Clock SPI (termopares) \\
+Forno 1 (Tubo U) & 9 & PWM da rampa \\
+Forno 2 (atomizador) & 10 & PWM est\'atico 700\,\celsius \\
+MISO & 11 & Dados SPI (termopares) \\
+CS T1 & 12 & Chip select do termopar 1 \\
+CS T2 & 13 & Chip select do termopar 2 \\
+\bottomrule
+\end{tabular}
+\par\vspace{2pt}{\footnotesize Fonte: elaborada pelo autor com base no m\'odulo \texttt{pin\_map.h}.}
+\end{table}
+
+\subsection{Leitura dos termopares}
+
+A leitura de temperatura \'e realizada por \emph{bit-bang} da interface SPI de
+dois conversores (um por forno). O firmware l\^e 16~bits por canal, extrai os
+12~bits de temperatura (bits 14 a 3), aplica a extens\~ao de sinal e converte
+para graus Celsius com resolu\c{c}\~ao de $0{,}25\,\celsius$. Os bits de erro
+(termopar aberto, curto) s\~ao verificados; quando o m\'odulo ainda est\'a em
+convers\~ao ou a leitura falha, o \'ultimo valor v\'alido \'e mantido, evitando
+que ru\'idos corrompam o controle. A falha persistente do termopar \'e sinalizada
+no pacote de resposta por um c\'odigo de erro.
+
+\subsection{Acionamento de atuadores e bomba por pulso}
+
+O driver de atuadores aplica diretamente o estado l\'ogico das v\'alvulas e o
+PWM dos fornos. A bomba perist\'altica possui comportamento de trava por pulso:
+o firmware detecta a transi\c{c}\~ao do estado l\'ogico desejado (0$\to$1 ou
+1$\to$0) e emite um pulso de $600$~ms no pino correspondente, que alterna o
+estado f\'isico da bomba; ao final do pulso, o pino retorna ao n\'ivel baixo.
+Esse tratamento \'e encapsulado na biblioteca port\'avel \texttt{pump\_toggle},
+que mant\'em o temporizador do pulso e permite abort\'a-lo de forma consistente
+no desligamento de seguran\c{c}a.
+
+\subsection{Loop principal e watchdog}
+
+O loop principal do firmware executa tr\^es tarefas: (i) leitura da porta
+serial, parse dos pacotes JSON recebidos e aplica\c{c}\~ao dos comandos,
+alimentando o watchdog a cada pacote v\'alido; (ii) verifica\c{c}\~ao do
+watchdog, que desliga todos os atuadores (estado seguro) caso nenhum pacote
+v\'alido seja recebido em mais de 1~s; e (iii) ciclo de aquisi\c{c}\~ao a
+250~ms (4~Hz), em que os termopares s\~ao lidos e um pacote de resposta JSON \'e
+enviado ao mestre.
+
+\section{Protocolo de comunica\c{c}\~ao serial}
+
+O protocolo entre o Raspberry Pi e o Arduino opera com pacotes JSON delimitados
+por quebra de linha, a 4~Hz. Tr\^es tipos de pacote comp\~oem o protocolo:
+
+\begin{itemize}
+  \item \textbf{Handshake de parametriza\c{c}\~ao} (mestre $\to$ \daq), enviado
+  no estabelecimento da conex\~ao, para informar os ganhos PID:
+\end{itemize}
+\begin{verbatim}
+{"cmd":"config","pid_u":{"kp":5.0,"ti":1.8,"td":0.0},
+ "pid_f2":{"kp":44.67,"ti":0.18,"td":0.0}}
+\end{verbatim}
+
+\begin{itemize}
+  \item \textbf{Pacote de escrita} (mestre $\to$ \daq), enviado a cada ciclo de
+  controle, com o estado dos atuadores e o PWM dos fornos:
+\end{itemize}
+\begin{verbatim}
+{"valves":{"sv1":1,"sv2":0,"sv3":0,"sv4":0,"sv5":1},
+ "pump":1,"pwm":{"u":0,"f2":255}}
+\end{verbatim}
+
+\begin{itemize}
+  \item \textbf{Pacote de leitura} (\daq $\to$ mestre), enviado a cada ciclo de
+  aquisi\c{c}\~ao, com as temperaturas e o estado do \daq:
+\end{itemize}
+\begin{verbatim}
+{"temp":{"t1":-45.2,"t2":699.5},"status":"active","error_code":0}
+\end{verbatim}
+
+O parser do firmware \'e tolerante a pacotes malformados (JSON inv\'alido ou
+linhas excessivamente longas s\~ao descartados) e distingue o handshake de
+configura\c{c}\~ao do pacote de escrita do ciclo de controle, aplicando atuadores
+somente quando a estrutura do pacote est\'a completa. No lado do backend, o
+enlace serial \'e encapsulado por um m\'odulo que serializa os comandos, l\^e as
+respostas e reconecta automaticamente quando a porta \'e restabelecida.
+
+\section{Loop de controle e watchdog do backend}
+
+O backend executa um \emph{loop de controle} em uma thread dedicada, com
+per\'iodo de $250$~ms (4~Hz). A cada itera\c{c}\~ao o loop: (i) verifica e
+restabelece a conex\~ao serial, se necess\'ario; (ii) envia o pacote de escrita
+com o estado corrente dos atuadores; (iii) l\^e o pacote de resposta do \daq;
+(iv) atualiza a FSM com a temperatura lida (executando o PID e a rampa); e
+(v) publica a telemetria mais recente. O intervalo de amostragem \'e medido com
+rel\'ogio monot\^onico, limitando o passo de integra\c{c}\~ao a $0{,}5$~s para
+evitar saltos indevidos ap\'os bloqueios.
+
+O backend implementa um \emph{watchdog equivalente} ao do firmware: se nenhuma
+resposta do \daq for recebida por mais de 1~s e o processo estiver em uma fase
+ativa (n\~ao segura e n\~ao manual), o loop dispara o evento de emerg\^encia,
+comutando a FSM para o estado seguro. Exce\c{c}\~oes na comunica\c{c}\~ao serial
+tamb\'em acionam o evento de emerg\^encia. Esse watchdog duplo (firmware e
+backend) garante que, independentemente de qual lado detecte a falha, os fornos
+sejam desligados dentro do intervalo de seguran\c{c}a.
+
+A telemetria publicada a cada ciclo cont\'em as temperaturas ($t_1$ e $t_2$), os
+setpoints ($u$ e $f_2$), os PWM aplicados, a taxa de aquecimento em $^{\circ}$C/s,
+o estado da FSM, o estado das v\'alvulas e da bomba, o c\'odigo de erro e as
+informa\c{c}\~oes de progresso da etapa e do ciclo (utilizadas pelo Diagrama de
+Tempos da IHM).
+
+\section{Persist\^encia de par\^ametros}
+
+Os par\^ametros do m\'etodo s\~ao persistidos em um arquivo JSON no Raspberry Pi.
+O modelo de dados inclui vers\~ao do schema, data de atualiza\c{c}\~ao, ganhos
+PID dos dois fornos, tempos $t_1$, $t_2$ e $t_3$, configura\c{c}\~ao da rampa
+(tempo, temperatura do nitrog\^enio e temperatura alvo) e setpoint do Forno 2.
+Dois mecanismos asseguram a integridade dos dados:
+
+\begin{itemize}
+  \item \textbf{Escrita at\^omica:} o conte\'udo \'e gravado em um arquivo
+  tempor\'ario no mesmo sistema de arquivos e ent\~ao renomeado sobre o arquivo
+  final, evitando arquivos corrompidos por interrup\c{c}\~ao;
+  \item \textbf{Backup rotativo:} antes de cada escrita, o arquivo anterior \'e
+  copiado para um backup (\texttt{params.json.bak}). Na leitura, se o arquivo
+  principal estiver corrompido, o backup \'e tentado e, na falha deste, os
+  valores padr\~ao s\~ao utilizados.
+\end{itemize}
+
+A valida\c{c}\~ao de faixas \'e aplicada antes da grava\c{c}\~ao (por exemplo,
+tempos positivos e temperaturas dentro de limites f\'isicos), de modo que
+par\^ametros inv\'alidos s\~ao rejeitados com c\'odigo de erro apropriado pela
+API.
+
+\section{Backend: API REST e WebSocket}
+
+O backend \'e constru\'ido com FastAPI \cite{fastapi} e exp\~oe uma API REST para
+opera\c{c}\~oes de configura\c{c}\~ao e de comando, al\'em de um WebSocket para a
+telemetria. A Tabela~\ref{tab:api} resume os endpoints.
+
+\begin{table}[htbp]
+\centering
+\caption{Endpoints da API do backend.}
+\label{tab:api}
+\begin{tabular}{llp{6.5cm}}
+\toprule
+\textbf{M\'etodo} & \textbf{Endpoint} & \textbf{Descri\c{c}\~ao} \\
+\midrule
+GET & \texttt{/api/config} & L\^e os par\^ametros persistidos \\
+PUT & \texttt{/api/config} & Valida e persiste par\^ametros \\
+POST & \texttt{/api/control/start} & Inicia o ciclo autom\'atico \\
+POST & \texttt{/api/control/stop} & Encerra o ciclo (Safe State) \\
+POST & \texttt{/api/control/emergency} & Parada de emerg\^encia \\
+PUT & \texttt{/api/control/mode} & Alterna modos autom\'atico/manual \\
+PUT & \texttt{/api/manual} & Override manual de atuadores e PWM \\
+WS & \texttt{/ws/telemetry} & Telemetria em tempo real (4~Hz) \\
+\bottomrule
+\end{tabular}
+\par\vspace{2pt}{\footnotesize Fonte: elaborada pelo autor com base no m\'odulo \texttt{api.py}.}
+\end{table}
+
+O servidor \'e executado em um \'unico processo que abriga o \emph{hub} de
+inst\^ancias compartilhadas (armazenamento, FSM, loop de controle e clientes
+WebSocket). A aplica\c{c}\~ao tamb\'em serve os arquivos est\'aticos da IHM
+compilada, permitindo que backend e interface sejam acessados em uma \'unica
+porta (servidor \'unico). Um processo ass\'incrono difunde a telemetria
+periodicamente a todos os clientes WebSocket conectados, na mesma frequ\^encia de
+4~Hz do loop de controle.
+
+\section{IHM Web}
+
+A IHM Web \'e uma aplica\c{c}\~ao de p\'agina \'unica desenvolvida em React e
+TypeScript \cite{react}, servida pelo backend. A interface \'e organizada em
+dois modos de exibi\c{c}\~ao: \textbf{MONITOR}, voltado ao acompanhamento do
+processo, e \textbf{CONFIG}, voltado \`a parametriza\c{c}\~ao do m\'etodo. Os
+principais componentes s\~ao:
+
+\begin{itemize}
+  \item \textbf{Diagrama de Tempos:} uma representa\c{c}\~ao em faixas
+  (estilo Gantt) das fases $T_0$ a $T_3$, com os setpoints de dura\c{c}\~ao, a
+  matriz de acionamento dos atuadores e o progresso real do ciclo, realimentado
+  pela telemetria;
+  \item \textbf{Progresso da etapa:} barra de progresso da fase corrente com
+  contagem regressiva at\'e a pr\'oxima transi\c{c}\~ao;
+  \item \textbf{Controles e Atuadores:} painel unificado que exibe o estado de
+  cada dispositivo e, no modo manual, permite o acionamento direto das v\'alvulas
+  e da bomba e o ajuste do PWM dos fornos;
+  \item \textbf{Gr\'aficos de tend\^encia:} pain\'eis por forno com as curvas de
+  temperatura (VP) e setpoint (SP), al\'em do PWM aplicado, atualizados em tempo
+  real;
+  \item \textbf{Configura\c{c}\~ao do m\'etodo:} formul\'ario para edi\c{c}\~ao
+  dos tempos, da rampa, das temperaturas e dos ganhos PID, com opera\c{c}\~oes de
+  leitura e grava\c{c}\~ao;
+  \item \textbf{Barra de status:} indica o estado corrente da FSM, destacando a
+  etapa em execu\c{c}\~ao.
+\end{itemize}
+
+A comunica\c{c}\~ao com o backend \'e feita pela API REST para comandos e
+configura\c{c}\~ao e pelo WebSocket \texttt{/ws/telemetry} para o fluxo cont\'inuo
+de telemetria \cite{fette2011}. A fonte \'unica de verdade para os metadados das
+etapas e para a matriz de acionamento \'e mantida no frontend em espelho da FSM
+do backend, garantindo consist\^encia entre o Diagrama de Tempos, o painel de
+atuadores e a barra de progresso. A Figura~\ref{fig:ihm} apresenta uma captura de
+tela da IHM em opera\c{c}\~ao.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.92\textwidth]{frontendweb.png}
+\caption{IHM Web em modo de monitoramento (Diagrama de Tempos, progresso da etapa, controles e atuadores e gr\'aficos de tend\^encia).}
+\label{fig:ihm}
+\par\vspace{2pt}{\footnotesize Fonte: captura de tela da IHM do projeto.}
+\end{figure}
+
+No modo autom\'atico, os controles manuais s\~ao bloqueados na interface,
+evitando opera\c{c}\~ao indevida durante o ciclo; o bot\~ao de emerg\^encia
+(STOP), por\'em, permanece sempre acess\'ivel e tem prioridade m\'axima,
+enviando o comando de emerg\^encia ao backend e conduzindo o processo ao estado
+seguro.
+
+\section{Seguran\c{c}a e tratamento de falhas}
+
+A estrat\'egia de seguran\c{c}a \'e composta por m\'ultiplas camadas:
+
+\begin{enumerate}[label=\arabic*)]
+  \item \textbf{Estado seguro por padr\~ao:} na inicializa\c{c}\~ao do firmware,
+  todos os pinos s\~ao configurados e todas as sa\'idas s\~ao colocadas no estado
+  seguro (v\'alvulas e bomba desligadas, fornos com PWM nulo e pist\~ao na
+  posi\c{c}\~ao de seguran\c{c}a);
+  \item \textbf{Watchdog no firmware:} desliga os fornos se nenhum pacote v\'alido
+  chegar em mais de 1~s, cobrindo inclusive a desconex\~ao f\'isica do cabo USB;
+  \item \textbf{Watchdog no backend:} comuta a FSM para o estado seguro se o
+  \daq n\~ao responder em mais de 1~s;
+  \item \textbf{Parada de emerg\^encia:} o comando de emerg\^encia \'e aceito em
+  qualquer estado e tem prioridade sobre o sequenciamento;
+  \item \textbf{Interlock de opera\c{c}\~ao:} no modo autom\'atico, os controles
+  manuais s\~ao bloqueados, e o acionamento de um novo ciclo s\'o \'e permitido a
+  partir do estado seguro.
+\end{enumerate}
+
+A combina\c{c}\~ao dessas camadas assegura que falhas de comunica\c{c}\~ao e
+erros de opera\c{c}\~ao n\~ao evoluam para condi\c{c}\~oes de risco ao
+equipamento (congelamento permanente do Tubo U ou sobreaquecimento dos fornos)
+ou \`a seguran\c{c}a do operador.

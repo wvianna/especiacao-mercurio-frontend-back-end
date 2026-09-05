@@ -1,0 +1,43 @@
+% ======================================================================
+% APÊNDICE A — MAPA DOS MÓDULOS DO SISTEMA
+% ======================================================================
+\chapter{MAPA DOS MÓDULOS DO SISTEMA}
+
+Este apêndice consolida o mapa dos principais módulos implementados, indicando a
+localização de cada componente no repositório do projeto, de modo a preservar a
+rastreabilidade entre a descrição do texto e o código-fonte.
+
+\begin{table}[htbp]
+\centering
+\caption{Localiza\c{c}\~ao e responsabilidade dos m\'odulos do sistema.}
+\label{tab:mapa}
+\footnotesize\setlength{\tabcolsep}{4pt}
+\begin{tabular}{p{3.8cm}p{6.4cm}p{4.7cm}}
+\toprule
+\textbf{M\'odulo} & \textbf{Localiza\c{c}\~ao} & \textbf{Responsabilidade} \\
+\midrule
+FSM & \texttt{backend/app/fsm.py} & Estados, eventos e matriz de acionamento \\
+PID & \texttt{backend/app/pid.py} & Controlador P+I com anti-windup \\
+Rampa & \texttt{backend/app/ramp.py} & Rampa do Tubo U e taxa de aquecimento \\
+Enlace serial & \texttt{backend/app/serial\_link.py} & Codec JSON e reconex\~ao \\
+Loop de controle & \texttt{backend/app/loop.py} & Ciclo 4~Hz e watchdog do backend \\
+Persist\^encia & \texttt{backend/app/config\_store.py} & Escrita at\^omica com backup \\
+API e servidor & \texttt{backend/app/api.py}; \texttt{main.py} & REST, WebSocket e f\'abrica \\
+Mapeamento de pinos & \texttt{firmware/src/pin\_map.h} & I/O, Safe State e pulsos \\
+Driver de atuadores & \texttt{firmware/src/actuator\_driver.*} & V\'alvulas, PWM e bomba \\
+Termopares & \texttt{firmware/src/thermocouple\_reader.*} & Leitura SPI (MAX6675) \\
+Biblioteca \daq{} & \texttt{firmware/lib/daqcore/*} & Parser JSON, watchdog e toggle \\
+IHM Web & \texttt{frontend/src/*} & Monitoramento, controle e configura\c{c}\~ao \\
+\bottomrule
+\end{tabular}
+\par\vspace{2pt}{\footnotesize Fonte: elaborada pelo autor com base na estrutura do reposit\'orio do projeto.}
+\end{table}
+
+O reposit\'orio do projeto \'e organizado em quatro pastas principais:
+\texttt{backend} (l\'ogica de supervis\~ao em Python), \texttt{firmware}
+(c\'odigo do Arduino em C++, gerenciado pelo PlatformIO \cite{platformio}),
+\texttt{frontend} (IHM Web em React e TypeScript \cite{react}) e \texttt{docs}
+(documenta\c{c}\~ao t\'ecnica e de requisitos). A documenta\c{c}\~ao operacional
+e os contratos de interface s\~ao mantidos na pr\'opria documenta\c{c}\~ao
+t\'ecnica do projeto, preservando uma fonte \'unica de verdade para a
+integra\c{c}\~ao entre as camadas.

@@ -1,0 +1,267 @@
+% ======================================================================
+% MONOGRAFIA — SISTEMA DE AUTOMAÇÃO E SUPERVISÃO PARA ESPECIAÇÃO DE Hg
+% Classe: memoir + formatação manual ABNT (sem abntex2 no ambiente).
+% Compilar: pdflatex -> bibtex -> pdflatex -> pdflatex (ver build.sh)
+% ======================================================================
+\documentclass[12pt,a4paper,openright,oneside]{memoir}
+
+% ----------------------------- pacotes básicos ------------------------
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[brazilian]{babel}
+\shorthandoff{"}          % desativa shorthand " do babel brazilian
+\usepackage{mathptmx}     % fonte Times (texto + matemática)
+\usepackage[a4paper,top=3cm,bottom=2cm,left=3cm,right=2cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\graphicspath{{figures/}}
+\usepackage[table]{xcolor}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{caption}
+\usepackage{enumitem}
+\usepackage{url}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,calc}
+\usepackage[pdftex,bookmarks=true,colorlinks=true,linkcolor=black,
+            citecolor=black,urlcolor=black,hypertexnames=false]{hyperref}
+
+% ------------------------- comandos auxiliares ------------------------
+\newcommand{\celsius}{\ensuremath{^{\circ}\mathrm{C}}}
+\newcommand{\graus}[1]{\ensuremath{#1^{\circ}}}
+\newcommand{\daq}{DAQ}
+\newcommand{\ihm}{IHM}
+\newcommand{\pid}{PID}
+
+% ----------------------------- espaçamento ----------------------------
+\OnehalfSpacing
+\setlength{\parindent}{1.25cm}
+\setlength{\parskip}{0pt}
+
+% --------------------------- estilo de capítulo -----------------------
+\makechapterstyle{monografia}{%
+  \renewcommand{\chapnamefont}{\normalfont\bfseries}%
+  \renewcommand{\chapnumfont}{\normalfont\Large\bfseries}%
+  \renewcommand{\chaptitlefont}{\normalfont\Large\bfseries}%
+  \setlength{\beforechapskip}{0.3\baselineskip}%
+  \setlength{\midchapskip}{0.5\baselineskip}%
+  \setlength{\afterchapskip}{1.5\baselineskip}%
+  \renewcommand{\printchaptername}{}%
+  \renewcommand{\chapternamenum}{}%
+}
+\chapterstyle{monografia}
+\setsecnumdepth{subsubsection}
+\settocdepth{subsection}
+
+% Título de seções: caixa alta para nível primário (ABNT NBR 14724)
+\renewcommand{\thesection}{\arabic{chapter}.\arabic{section}}
+\renewcommand{\thesubsection}{\thesection.\arabic{subsection}}
+\renewcommand{\thesubsubsection}{\thesubsection.\arabic{subsubsection}}
+\setsecheadstyle{\normalfont\bfseries\MakeUppercase}
+\setsubsecheadstyle{\normalfont\bfseries}
+\setsubsubsecheadstyle{\normalfont\bfseries\itshape}
+
+% ------------------------ cabeçalho/rodapé ----------------------------
+\pagestyle{plain}
+\nouppercaseheads
+
+% --------------------- legendas de figuras e tabelas ------------------
+\captionsetup{font=small,labelfont=bf,textfont=bf,labelsep=endash}
+\renewcommand{\figurename}{Figura}
+\renewcommand{\tablename}{Tabela}
+
+% ------------------------- numeração de equação -----------------------
+\numberwithin{equation}{chapter}
+
+% ------------------ dados institucionais (preencher) ------------------
+\newcommand{\instituicao}{Instituto Federal Fluminense}
+\newcommand{\curso}{[CURSO]}
+\newcommand{\titulocurso}{Aprendizes da vida}
+\newcommand{\autor}{William da Silva Vianna\\ Renato Gomes Sobral Barcellos}
+\newcommand{\orientador}{Os pr\'oprios autores}
+\newcommand{\cidade}{Campos dos Goytacazes}
+\newcommand{\ano}{2026}
+
+% ======================================================================
+\begin{document}
+
+% ----------------------------------------------------------------------
+% CAPA
+% ----------------------------------------------------------------------
+\thispagestyle{empty}
+\begin{center}
+\MakeUppercase{\instituicao}\\[0.3cm]
+\MakeUppercase{\curso}\\[4.5cm]
+{\large \autor}\\[4.0cm]
+{\Large \bfseries
+  DESENVOLVIMENTO DE SISTEMA DE AUTOMAÇÃO E SUPERVISÃO PARA
+  PREPARAÇÃO DE AMOSTRAS EM ESPECIAÇÃO DE MERCÚRIO}\\[5.5cm]
+{\large \cidade}\\[0.2cm]
+{\large \ano}
+\end{center}
+\clearpage
+
+% ----------------------------------------------------------------------
+% FOLHA DE ROSTO
+% ----------------------------------------------------------------------
+\thispagestyle{empty}
+\begin{center}
+{\large \autor}\\[5.0cm]
+{\Large \bfseries
+  DESENVOLVIMENTO DE SISTEMA DE AUTOMAÇÃO E SUPERVISÃO PARA
+  PREPARAÇÃO DE AMOSTRAS EM ESPECIAÇÃO DE MERCÚRIO}
+\end{center}
+\vspace{3.0cm}
+\begin{center}
+\begin{minipage}[t]{9.0cm}
+Monografia apresentada ao curso de \curso{} da \instituicao{}
+como requisito parcial para a obtenção do título de
+\titulocurso{}.
+\end{minipage}
+\end{center}
+\vspace{1.0cm}
+\begin{center}
+\begin{minipage}[t]{9.0cm}
+Orientador: \orientador{}
+\end{minipage}
+\end{center}
+\vfill
+\begin{center}
+{\large \cidade}\\[0.2cm]
+{\large \ano}
+\end{center}
+\clearpage
+
+% ----------------------------------------------------------------------
+% FRENTE PRÉ-TEXTUAL (numeração romana)
+% ----------------------------------------------------------------------
+\frontmatter
+\pagestyle{plain}
+
+% ------------------------------ dedicatória ---------------------------
+\chapter*{Dedicatória}
+\addcontentsline{toc}{chapter}{Dedicatória}
+\begin{flushright}
+\textit{[Dedicatória — texto opcional a ser redigido pelo autor.]}
+\end{flushright}
+\clearpage
+
+% ---------------------------- agradecimentos --------------------------
+\chapter*{Agradecimentos}
+\addcontentsline{toc}{chapter}{Agradecimentos}
+\textit{[Agradecimentos — texto opcional a ser redigido pelo autor,
+mencionando orientador(a), instituição e demais pessoas que
+contribuíram para o trabalho.]}
+\clearpage
+
+% ------------------------------- epígrafe -----------------------------
+\chapter*{Epígrafe}
+\addcontentsline{toc}{chapter}{Epígrafe}
+\begin{flushright}
+\textit{[Epígrafe — citação opcional escolhida pelo autor.]}
+\end{flushright}
+\clearpage
+
+% ------------------------------- resumo -------------------------------
+\chapter*{RESUMO}
+\addcontentsline{toc}{chapter}{RESUMO}
+\input{chapters/resumo}
+\clearpage
+
+% ------------------------------- abstract -----------------------------
+\chapter*{ABSTRACT}
+\addcontentsline{toc}{chapter}{ABSTRACT}
+\input{chapters/abstract}
+\clearpage
+
+% ------------------------- lista de figuras ---------------------------
+\renewcommand{\listfigurename}{LISTA DE FIGURAS}
+\listoffigures*
+\clearpage
+
+% ------------------------- lista de tabelas ---------------------------
+\renewcommand{\listtablename}{LISTA DE TABELAS}
+\listoftables*
+\clearpage
+
+% --------------------- lista de abreviaturas e siglas ----------------
+\chapter*{LISTA DE ABREVIATURAS E SIGLAS}
+\addcontentsline{toc}{chapter}{LISTA DE ABREVIATURAS E SIGLAS}
+\begin{tabular}{@{}p{3.6cm}p{11.6cm}@{}}
+AAS   & Espectrometria de absorção atômica (Atomic Absorption Spectrometry)\\
+AFS   & Espectrometria de fluorescência atômica (Atomic Fluorescence Spectrometry)\\
+API   & Interface de programação de aplicações\\
+CVAAS & Absorção atômica com vapor frio (Cold Vapor AAS)\\
+\daq{}   & Aquisição de dados (Data Acquisition)\\
+FSM   & Máquina de estados finita (Finite State Machine)\\
+GC    & Cromatografia gasosa\\
+Hg    & Mercúrio\\
+HTTP  & Protocolo de transferência de hipertexto\\
+\ihm{}   & Interface homem-máquina\\
+JSON  & JavaScript Object Notation\\
+LSB   & Bit menos significativo\\
+MISO  & Master In Slave Out (SPI)\\
+MOSI  & Master Out Slave In (SPI)\\
+N$_2$  & Nitrogênio molecular (nitrogênio líquido)\\
+\pid{}   & Controlador proporcional-integral-derivativo\\
+PWM   & Modulação por largura de pulso (Pulse Width Modulation)\\
+RPi   & Raspberry Pi\\
+REST  & Representational State Transfer\\
+SP    & Setpoint (valor de referência)\\
+SPI   & Serial Peripheral Interface\\
+SSR   & Relé de estado sólido\\
+SV    & Válvula solenóide\\
+TEBS  & Tetraetilborato de sódio (NaBEt$_4$)\\
+VM    & Variável manipulada\\
+VP    & Variável de processo\\
+WS    & WebSocket\\
+\end{tabular}
+\clearpage
+
+% ----------------------------- lista de símbolos ----------------------
+\chapter*{LISTA DE SÍMBOLOS}
+\addcontentsline{toc}{chapter}{LISTA DE SÍMBOLOS}
+\begin{tabular}{@{}p{4.2cm}p{11cm}@{}}
+$K_p$    & Ganho proporcional do controlador\\
+$T_i$    & Tempo integral do controlador (min)\\
+$T_d$    & Tempo derivativo do controlador (min)\\
+$e(t)$   & Sinal de erro (diferença entre setpoint e variável de processo)\\
+$u(t)$   & Variável manipulada (saída do controlador)\\
+$T_0,\dots,T_3$ & Tempos de acionamento do ciclo de preparação\\
+$t_1,t_2,t_3$   & Durações configuráveis das fases (s)\\
+$VM_u$, $VM_{f2}$ & Variável manipulada do Tubo U e do Forno 2 (PWM 0--255)\\
+$\dot{T}$ & Taxa de aquecimento ($^{\circ}$C/s)\\
+\end{tabular}
+\clearpage
+
+% ------------------------------- sumário ------------------------------
+\renewcommand{\contentsname}{SUMÁRIO}
+\tableofcontents*
+\clearpage
+
+% ======================================================================
+% CORPO PRINCIPAL (numeração arábica)
+% ======================================================================
+\mainmatter
+\input{chapters/cap01-introducao}
+\input{chapters/cap02-fundamentacao}
+\input{chapters/cap03-trabalhos-relacionados}
+\input{chapters/cap04-metodologia}
+\input{chapters/cap05-desenvolvimento}
+\input{chapters/cap06-resultados}
+\input{chapters/cap07-conclusao}
+
+% ------------------------------ referências ---------------------------
+\clearpage
+\renewcommand{\bibname}{REFERÊNCIAS}
+\renewcommand{\bibsection}{%
+  \chapter*{\bibname}%
+  \addcontentsline{toc}{chapter}{REFERÊNCIAS}}
+\bibliographystyle{plain}
+\bibliography{references}
+
+% ------------------------------ apêndices -----------------------------
+\appendix
+\input{chapters/apendice-a}
+
+\end{document}

@@ -1,0 +1,182 @@
+% ======================================================================
+% CAPÍTULO 1 — INTRODUÇÃO
+% ======================================================================
+\chapter{INTRODUÇÃO}
+
+\section{Contextualização do tema}
+
+O mercúrio (Hg) é um poluente global de elevada toxicidade que pode ser
+liberado para o ambiente por fontes naturais e antropogênicas. Seu
+comportamento, transporte e risco toxicológico dependem fortemente da espécie
+química em que se encontra: o metilmercúrio, por exemplo, é uma forma
+neurotóxica que se acumula na cadeia alimentar, enquanto o mercúrio elementar
+apresenta elevada pressão de vapor e grande mobilidade atmosférica. Nesse
+contexto, a \emph{especiação} de mercúrio --- isto é, a determinação das
+diferentes formas químicas do elemento em uma amostra --- é indispensável para
+avaliações de risco e estudos biogeoquímicos confiáveis \cite{leermakers2005,
+bloom1989}.
+
+A determinação de espécies de mercúrio exige um procedimento analítico de
+preparação de amostras composto por etapas sequenciais bem definidas. No sistema
+considerado neste trabalho, a amostra líquida é submetida à \emph{derivatização}
+com tetraetilborato de sódio (TEBS, NaBEt$_4$), que volatiliza as espécies de
+mercúrio presentes. Em seguida, um gás de arraste (hélio) conduz os vapores até
+um Tubo U imerso em um copo com nitrogênio líquido, onde ocorre a
+\emph{criofocalização} das espécies a aproximadamente $-196\,\celsius$. Após o
+período definido pelo operador, o copo é abaixado, o aquecimento do Tubo U é
+iniciado e as espécies são liberadas progressivamente conforme sua temperatura
+de volatilização, sendo então atomizadas a $700\,\celsius$ em um segundo forno e
+detectadas por espectrometria de absorção atômica.
+
+A qualidade analítica do processo depende diretamente da forma como a
+temperatura do Tubo U é controlada ao longo do tempo: idealmente, uma rampa
+linear de temperatura na faixa de aproximadamente $-50\,\celsius$ a
+$230\,\celsius$ permite correlacionar o instante de liberação de cada espécie
+com sua temperatura de volatilização. Qualquer não linearidade na rampa
+compromete a separação das espécies e produz picos sobrepostos no detector,
+invalidando a análise. O processo físico completo é detalhado no Capítulo~2, e
+os requisitos técnicos que o especificam estão documentados nos arquivos de
+requisitos e de especificação do sistema.
+
+\section{Problema de pesquisa}
+
+O equipamento de preparação de amostras descrito era originalmente controlado
+por um sistema supervisório desenvolvido em LabVIEW, executado em um computador
+com comunicação serial a um módulo de aquisição de dados (Arduino Uno). Com o
+tempo, esse sistema legado passou a apresentar limitações relevantes, que podem
+ser agrupadas em cinco frentes principais:
+
+\begin{enumerate}[label=\roman*)]
+  \item \textbf{Controle inadequado da rampa de temperatura do Tubo U.} O
+  sistema não garante a linearidade da rampa na faixa de $-50\,\celsius$ a
+  $230\,\celsius$, comprometendo a separação e a identificação das espécies de
+  mercúrio e resultando em picos sobrepostos, análises inválidas e retrabalho;
+  \item \textbf{Parâmetros não persistentes e pouco rastreáveis.} Os ganhos dos
+  controladores e os tempos do método ficavam fixos ou sem persistência
+  confiável entre execuções, prejudicando a repetibilidade e a auditoria do
+  método;
+  \item \textbf{Interface propensa a erro humano.} A interface legada não
+  dispunha de um sinótico claro do processo, de indicadores de tendência ou de
+  uma parada de emergência centralizada de alta prioridade;
+  \item \textbf{Acoplamento entre a lógica de aplicação e a execução em tempo
+  real.} A ausência de separação entre o supervisório e a aquisição de campo
+  dificultava a depuração, a manutenção e a evolução do sistema;
+  \item \textbf{Segurança insuficiente.} Não havia um mecanismo de watchdog que
+  desligasse os aquecedores automaticamente em caso de perda de comunicação,
+  expondo o equipamento ao risco de congelamento permanente do Tubo U ou de
+  sobreaquecimento dos fornos.
+\end{enumerate}
+
+A partir desse diagnóstico, o problema de pesquisa pode ser enunciado da
+seguinte forma: \emph{como projetar e implementar um sistema de automação e
+supervisão que garanta o controle preciso e seguro do processo de preparação de
+amostras em especiação de mercúrio, superando as limitações do sistema legado e
+preservando a repetibilidade analítica do método?}
+
+\section{Justificativa}
+
+A substituição do sistema legado é motivada, em primeiro lugar, pela necessidade
+de \emph{repetibilidade analítica comprovável}. Métodos de especiação dependem
+da reprodutibilidade da rampa de temperatura e da estabilidade das condições do
+processo; a persistência dos parâmetros do método e o registro de tendências
+permitem auditoria e rastreabilidade das análises. Em segundo lugar, a
+modernização apoia-se na disponibilidade de plataformas de baixo custo e alta
+confiabilidade --- como o Raspberry Pi e o Arduino Uno --- capazes de atender
+aos requisitos de tempo real e de interface do processo a um custo muito menor
+que soluções baseadas em controladores lógicos programáveis industriais ou em
+licenças proprietárias de software de supervisão \cite{arduino, raspberrypi}.
+
+Em terceiro lugar, a dimensão de \emph{segurança operacional} é crítica em um
+ambiente laboratorial que manipula nitrogênio líquido e aquecedores de alta
+temperatura. A ausência de uma parada segura automática representa risco de dano
+ao equipamento --- como o congelamento permanente do Tubo U --- e à amostra.
+Por fim, do ponto de vista acadêmico, o trabalho integra conceitos de controle
+de processos, sistemas embarcados, comunicação industrial, engenharia de
+software e interface homem-máquina, constituindo um estudo de caso aplicado de
+engenharia de automação.
+
+\section{Objetivos}
+
+\subsection{Objetivo geral}
+
+Projetar e implementar um sistema de automação e supervisão para a preparação de
+amostras em especiação de mercúrio, baseado em máquina de estados finita,
+controle PID misto, módulo de aquisição de dados em tempo real e interface
+homem-máquina Web, com parâmetros persistentes e segurança operacional.
+
+\subsection{Objetivos específicos}
+
+\begin{enumerate}[label=\arabic*)]
+  \item Modelar o processo de preparação de amostras (fases $T_0$ a $T_3$) em
+  uma máquina de estados finita com matriz de acionamento dos atuadores (SV1 a
+  SV5, bomba e fornos);
+  \item Implementar o controle PID misto do Forno 1 (Tubo U) --- razão de taxas
+  de aquecimento para temperaturas abaixo de $0\,\celsius$ e controle PID em
+  malha fechada acima desse limiar --- e o controle do Forno 2 (atomizador) em
+  setpoint fixo de $700\,\celsius$;
+  \item Definir e implementar o protocolo de comunicação JSON estruturado entre
+  o Raspberry Pi e o Arduino, operando em ciclo de controle de 4~Hz, com
+  handshake de parametrização e pacotes de escrita e de leitura;
+  \item Desenvolver o firmware do módulo de aquisição de dados no Arduino Uno,
+  responsável pelo acionamento dos atuadores, pela leitura de termopares via
+  SPI e pelo watchdog de segurança;
+  \item Desenvolver uma IHM Web (React e TypeScript) com monitoramento em tempo
+  real, Diagrama de Tempos, gráficos de tendência e painéis de controle e de
+  configuração;
+  \item Implementar a persistência atômica dos parâmetros do método em arquivo
+  JSON, com backup rotativo e validação de faixas;
+  \item Validar o sistema por meio de testes unitários, de integração,
+  funcionais e de segurança, seguindo a estratégia de desenvolvimento orientado
+  a testes adotada no projeto.
+\end{enumerate}
+
+\section{Hipótese}
+
+A hipótese de trabalho é que uma arquitetura mestre-escravo composta por um
+Raspberry Pi executando a lógica de supervisão e controle em Python e um Arduino
+Uno atuando como DAQ em tempo real, integrados por um protocolo JSON a 4~Hz e
+supervisionados por uma IHM Web, é capaz de atender aos requisitos funcionais e
+de segurança do processo de preparação de amostras, proporcionando controle
+preciso da rampa de temperatura, persistência auditável dos parâmetros e parada
+segura automática diante de falhas de comunicação, com custo e flexibilidade
+superiores aos do sistema legado.
+
+\section{Delimitação do trabalho}
+
+O escopo deste trabalho limita-se à modernização do software de automação e
+supervisão do processo de preparação de amostras (versão V1), conforme definido
+na documentação de requisitos do sistema. Não fazem parte do
+escopo: a integração automática com o detector Lumex (apenas a indicação do
+início de leitura é considerada), a calibração automática dos termopares, o
+controle de vazão dos rotâmetros (regulagem manual) e mecanismos de
+autenticação multiusuário, previstos para versões futuras. A validação
+experimental em bancada com o processo físico, incluindo a calibração da curva
+de aquecimento do Tubo U e a verificação da linearidade da rampa, é tratada como
+etapa de continuidade, sendo o presente desenvolvimento validado em ambiente de
+simulação por meio de testes automatizados.
+
+\section{Visão geral da metodologia}
+
+Do ponto de vista metodológico, o trabalho caracteriza-se como uma pesquisa
+aplicada, de natureza experimental e abordagem quantitativa, organizada segundo
+as etapas de: (i) levantamento e análise dos requisitos do processo a partir da
+documentação técnica existente; (ii) definição da arquitetura do sistema; (iii)
+desenvolvimento incremental do firmware, do backend e da IHM Web; e (iv)
+validação por testes automatizados. O desenvolvimento seguiu práticas de
+especificação dirigida e de desenvolvimento orientado a testes, em que os
+contratos de interface e os critérios de aceitação foram definidos antes da
+implementação \cite{beck2002}. O detalhamento metodológico é
+apresentado no Capítulo~4.
+
+\section{Estrutura da monografia}
+
+Este trabalho está organizado em sete capítulos. O Capítulo~1 (presente)
+contextualiza o tema e apresenta o problema, a justificativa e os objetivos. O
+Capítulo~2 desenvolve a fundamentação teórica, abordando a química do processo,
+os conceitos de controle e a base tecnológica empregada. O Capítulo~3 apresenta
+os trabalhos relacionados e o posicionamento da solução proposta. O Capítulo~4
+descreve a metodologia adotada. O Capítulo~5 detalha o desenvolvimento do
+sistema, desde a arquitetura até a implementação de cada módulo. O Capítulo~6
+apresenta os experimentos e os resultados obtidos na validação, com a respectiva
+discussão. Por fim, o Capítulo~7 apresenta as conclusões e as sugestões para
+trabalhos futuros.
