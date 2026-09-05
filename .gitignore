@@ -70,3 +70,16 @@ desktop.ini
 *.tmp
 *.bak
 *.orig
+
+# Auxiliares da monografia LaTeX (o PDF final não é ignorado)
+monografia/*.aux
+monografia/*.bbl
+monografia/*.blg
+monografia/*.lof
+monografia/*.lot
+monografia/*.out
+monografia/*.toc
+monografia/*.fls
+monografia/*.fdb_latexmk
+monografia/*.synctex.gz
+monografia/_minted*/s
