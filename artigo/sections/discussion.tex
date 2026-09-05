@@ -1,0 +1,44 @@
+% ======================================================================
+% SEÇÃO 5 — DISCUSSÃO
+% ======================================================================
+\section{Discuss\~ao}
+\label{sec:disc}
+
+Os resultados indicam que a implementa\c{c}\~ao atende aos objetivos funcionais e
+de seguran\c{c}a definidos, com 67 testes aprovados distribu\'idos pelas tr\^es
+camadas do sistema. Tr\^es observa\c{c}\~oes merecem destaque. Primeiro, os testes
+de FSM, PID e rampa validam matematicamente a estrat\'egia de controle mista,
+incluindo o tratamento da satura\c{c}\~ao e a sele\c{c}\~ao da regi\~ao de
+opera\c{c}\~ao --- condi\c{c}\~ao necess\'aria, ainda que n\~ao suficiente, para a
+qualidade da rampa em bancada. Segundo, a valida\c{c}\~ao dos watchdogs em ambas
+as camadas demonstra que o requisito de parada segura autom\'atica \'e atendido no
+n\'ivel de software, independentemente do hardware. Terceiro, os testes de ciclo
+completo com simulador confirmam a coer\^encia entre a FSM, o protocolo serial e a
+telemetria consumida pela IHM, reduzindo o risco de falhas de integra\c{c}\~ao
+quando o hardware real for conectado.
+
+Dos crit\'erios de aceita\c{c}\~ao consolidados na Tabela~\ref{tab:criterios},
+tr\^es foram verific\'aveis no ambiente simulado (comunica\c{c}\~ao a 4~Hz,
+persist\^encia e watchdog) e dois dependem de medi\c{c}\~ao em bancada
+(linearidade da rampa e estabilidade do Forno 2). Esses \'ultimos s\~ao
+crit\'erios de \emph{desempenho t\'ermico} do processo f\'isico e n\~ao podem ser
+atestados por testes de software: exigem a calibra\c{c}\~ao da curva de
+aquecimento do Tubo U (Taxa $\times$ PWM) e a verifica\c{c}\~ao experimental das
+curvas de temperatura, etapas de continuidade deste trabalho.
+
+A principal limita\c{c}\~ao \'e, portanto, a aus\^encia de medi\c{c}\~oes em
+bancada com o processo f\'isico. Al\'em disso, a raz\~ao de taxas empregada na
+regi\~ao de malha aberta depende da calibra\c{c}\~ao da taxa de aquecimento do
+sistema; na aus\^encia desse dado, a implementa\c{c}\~ao adota uma aproxima\c{c}\~ao
+que precisa ser confirmada. Registra-se, ainda, a indefini\c{c}\~ao quanto ao
+circuito integrado exato de convers\~ao do termopar (MAX6675 ou MAX31855), que
+n\~ao altera a l\'ogica de controle, mas deve ser confirmada na documenta\c{c}\~ao
+f\'isica do equipamento.
+
+No plano t\'ecnico, os resultados demonstram a viabilidade da arquitetura
+proposta para substituir o sistema legado, com vantagens de custo, flexibilidade
+e seguran\c{c}a. No plano operacional, a persist\^encia dos par\^ametros e o
+registro de tend\^encias criam condi\c{c}\~oes para a repetibilidade e a auditoria
+do m\'etodo, requisitos valorizados em ambiente anal\'itico. A etapa de
+valida\c{c}\~ao em bancada \'e o passo natural para confirmar os crit\'erios de
+desempenho t\'ermico e calibrar a rampa do Tubo U.

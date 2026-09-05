@@ -1,0 +1,39 @@
+% ======================================================================
+% SEÇÃO 6 — CONCLUSÃO
+% ======================================================================
+\section{Conclus\~ao}
+\label{sec:concl}
+
+Este artigo apresentou o projeto, a implementa\c{c}\~ao e a valida\c{c}\~ao de um
+sistema de automa\c{c}\~ao e supervis\~ao para a prepara\c{c}\~ao de amostras em
+especia\c{c}\~ao de merc\'urio, concebido para substituir um sistema legado
+baseado em LabVIEW. A solu\c{c}\~ao adota uma arquitetura mestre-escravo composta
+por um Raspberry Pi (l\'ogica de alto n\'ivel em Python), um Arduino Uno
+(aquisi\c{c}\~ao em tempo real) e uma IHM Web em React e TypeScript, integrados por
+um protocolo JSON a 4~Hz.
+
+O objetivo proposto foi atingido no \^ambito da valida\c{c}\~ao realizada: o
+processo foi modelado em uma m\'aquina de estados finita com matriz de
+acionamento; o controle PID misto da rampa do Tubo U e o controle do Forno 2 a
+$700\,\celsius$ foram implementados e verificados por testes; o protocolo JSON, o
+firmware do \daq (leitura SPI, atuadores e watchdog), a persist\^encia at\^omica
+dos par\^ametros e a IHM Web foram desenvolvidos e integrados. A valida\c{c}\~ao
+por 67 testes automatizados aprovados demonstrou a corre\c{c}\~ao da l\'ogica de
+controle, a integra\c{c}\~ao entre as camadas e a efetividade dos mecanismos de
+seguran\c{c}a no n\'ivel de software.
+
+As principais contribui\c{c}\~oes s\~ao: a modelagem expl\'icita e verific\'avel do
+sequenciamento; a estrat\'egia de controle mista que contorna a limita\c{c}\~ao de
+medi\c{c}\~ao na regi\~ao criog\^enica; a arquitetura mestre-escravo de baixo
+custo com separa\c{c}\~ao entre supervis\~ao e tempo real; o protocolo JSON aberto;
+e o projeto de seguran\c{c}a em camadas (estado seguro por padr\~ao e watchdog
+duplo).
+
+Como limita\c{c}\~ao, a valida\c{c}\~ao foi conduzida em ambiente simulado, sem o
+processo f\'isico; os crit\'erios de desempenho t\'ermico e a calibra\c{c}\~ao da
+curva de aquecimento do Tubo U permanecem pendentes de verifica\c{c}\~ao
+experimental. Como trabalhos futuros, sugere-se: validar o sistema em bancada;
+integrar automaticamente o detector Lumex e exportar as curvas geradas;
+implementar autentica\c{c}\~ao de operadores com trilha de auditoria;
+desenvolver um simulador de processo para treinamento; e implementar a
+sintoniza\c{c}\~ao autom\'atica dos controladores PID.

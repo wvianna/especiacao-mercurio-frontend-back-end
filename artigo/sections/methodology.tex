@@ -1,0 +1,168 @@
+% ======================================================================
+% SEÇÃO 3 — MATERIAIS E MÉTODOS
+% ======================================================================
+\section{Materiais e m\'etodos}
+\label{sec:met}
+
+\subsection{Arquitetura do sistema}
+
+O sistema adota uma topologia mestre-escravo. O \emph{mestre} \'e um Raspberry Pi
+que executa o backend em Python: a m\'aquina de estados, os controladores, a
+persist\^encia de par\^ametros, a API REST/WebSocket e o servi\c{c}o da IHM. O
+\emph{escravo} \'e um Arduino Uno que opera como m\'odulo de aquisi\c{c}\~ao de
+dados (\daq) em tempo real: aplica comandos de atuadores, gera os PWM dos fornos e
+l\^e termopares via SPI. A comunica\c{c}\~ao entre as plataformas \'e feita por um
+enlace serial USB com pacotes JSON em ciclo de 4~Hz. A Figura~\ref{fig:arq}
+apresenta a arquitetura e o fluxo de dados.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  font=\small,
+  box/.style={rectangle, draw, minimum width=3.2cm, minimum height=1.0cm,
+              align=center, rounded corners=2pt},
+  arr/.style={-{Latex[length=2mm]}, thick}
+]
+  \node[box] (ihm) at (0,2.4) {IHM Web\\ (React + TypeScript)};
+  \node[box] (be)  at (0,0) {Backend (Raspberry Pi)\\ FSM + PID + persist\^encia};
+  \node[box] (daq) at (0,-2.4) {\daq{} Arduino Uno\\ atuadores + SPI + watchdog};
+  \node[box] (pr)  at (0,-4.6) {Processo f\'isico\\ v\'alvulas, bomba, fornos, termopares};
+  \node[box, minimum width=3.2cm, minimum height=0.9cm] (st) at (6.4,0) {Par\^ametros\\ (JSON em disco)};
+  \draw[arr,<->] (ihm) -- node[right]{HTTP/WS} (be);
+  \draw[arr,<->] (be) -- node[right]{serial JSON 4~Hz} (daq);
+  \draw[arr] (be) -- node[above]{escrita} (st);
+  \draw[arr] (st) -- node[above]{leitura} (be);
+  \draw[arr,<->] (daq) -- node[right]{sinais} (pr);
+\end{tikzpicture}
+\caption{Arquitetura mestre-escravo e fluxo de dados do sistema.}
+\label{fig:arq}
+\end{figure}
+
+\subsection{Descri\c{c}\~ao do processo e modelagem}
+
+O processo de prepara\c{c}\~ao foi modelado em uma FSM com os estados seguro
+(\texttt{SAFE}), deriva\c{c}\~ao/\allowbreak criofocaliza\c{c}\~ao ($T_0$),
+estabiliza\c{c}\~ao ($T_1$), rampa ($T_2$), purga total ($T_3$) e manual
+(\texttt{MANUAL}). A cada estado associa-se uma matriz de acionamento das
+sa\'idas discretas (v\'alvulas SV1 a SV5 e bomba perist\'altica), apresentada na
+Tabela~\ref{tab:matriz}, em que 1 indica atuador acionado. Eventos de parada
+(\texttt{stop}) e de emerg\^encia (\texttt{emergency}) podem ocorrer a qualquer
+momento e conduzem ao estado seguro; o modo manual permite o acionamento direto
+dos atuadores para manuten\c{c}\~ao.
+
+\begin{table}[htbp]
+\centering
+\caption{Matriz de acionamento dos atuadores por fase do ciclo.}
+\label{tab:matriz}
+\begin{tabular}{lcccccc}
+\toprule
+\textbf{Fase} & \textbf{SV1} & \textbf{SV2} & \textbf{SV3} & \textbf{SV4} & \textbf{SV5} & \textbf{Bomba} \\
+\midrule
+$T_0$ (deriva\c{c}\~ao/criofocaliza\c{c}\~ao) & 1 & 0 & 0 & 0 & 1 & 1 \\
+$T_1$ (estabiliza\c{c}\~ao) & 1 & 0 & 0 & 0 & 1 & 0 \\
+$T_2$ (rampa/purga) & 1 & 0 & 0 & 0 & 0 & 0 \\
+$T_3$ (purga total) & 0 & 1 & 1 & 1 & 0 & 0 \\
+SAFE & 0 & 0 & 0 & 0 & 0 & 0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Controle de temperatura}
+
+O controle de temperatura emprega uma estrat\'egia PID mista, implementada no
+backend e detalhada a seguir.
+
+\textbf{Forno 2 (atomizador):} opera em malha fechada com setpoint fixo de
+$700\,\celsius$ durante as fases $T_0$ a $T_2$, com controlador discreto P+I,
+anti-windup por clampagem e deriva\c{c}\~ao sobre a vari\'avel de processo. Os
+ganhos padr\~ao s\~ao $K_p = 44{,}67$, $T_i = 0{,}18$~min e $T_d = 0$.
+
+\textbf{Forno 1 (Tubo U):} combina duas regi\~oes de controle, selecionadas pela
+temperatura medida $T_1$:
+\begin{itemize}
+  \item \textbf{$T_1 < 0\,\celsius$:} a medi\c{c}\~ao n\~ao \'e confi\'avel; a
+  vari\'avel manipulada \'e calculada em malha aberta pela raz\~ao de taxas
+  \begin{equation}
+    VM = \frac{\dot{T}_{\mathrm{des}}}{\dot{T}_{\mathrm{sist}}} \times VM_{\max},
+    \label{eq:razao}
+  \end{equation}
+  em que $\dot{T}_{\mathrm{des}}$ \'e a taxa de aquecimento desejada pelo
+  operador, $\dot{T}_{\mathrm{sist}}$ a taxa do sistema (calibrada em bancada) e
+  $VM_{\max}=255$ o valor m\'aximo da sa\'ida PWM;
+  \item \textbf{$T_1 \ge 0\,\celsius$:} um PID em malha fechada segue o setpoint
+  din\^amico da rampa, $r(t)=T_{N_2}+\dot{T}_{\mathrm{des}}\,t$, limitado ao alvo
+  de $230\,\celsius$, em que $T_{N_2}$ \'e a temperatura inicial do nitrog\^enio.
+\end{itemize}
+
+A taxa de aquecimento desejada \'e calculada por
+$\dot{T}_{\mathrm{des}}=(T_{\mathrm{alvo}}-T_{N_2})/t_{\mathrm{rampa}}$ e \'e o
+coeficiente exibido na IHM, em $^{\circ}$C/s.
+
+\subsection{Implementa\c{c}\~ao}
+
+O backend (\texttt{Python} + FastAPI \cite{fastapi}) \'e organizado em m\'odulos
+de FSM, controlador PID, rampa, enlace serial, loop de controle, persist\^encia e
+API. O loop de controle roda em uma thread dedicada a 4~Hz: a cada itera\c{c}\~ao
+envia o pacote de escrita ao \daq, l\^e a resposta (temperaturas e estado),
+atualiza a FSM e publica a telemetria. O \emph{watchdog do backend} comuta a FSM
+para o estado seguro se n\~ao houver resposta do \daq por mais de 1~s.
+
+O firmware do Arduino \'e organizado em c\'odigo de aplica\c{c}\~ao e em uma
+biblioteca port\'avel (\texttt{daqcore}) contendo o parser JSON, o watchdog e a
+l\'ogica de pulso da bomba. O firmware l\^e termopares via SPI (12~bits, LSB
+$0{,}25\,\celsius$), mantendo o \'ultimo valor v\'alido durante convers\~ao ou
+falha transit\'oria, e aplica os atuadores; o \emph{watchdog do firmware} desliga
+os fornos se nenhum pacote v\'alido for recebido em mais de 1~s. A bomba
+perist\'altica possui comportamento de trava por pulso: o firmware detecta a
+transi\c{c}\~ao do estado l\'ogico e emite um pulso de $600$~ms que alterna o
+estado f\'isico da bomba.
+
+Os par\^ametros do m\'etodo (ganhos PID, tempos $t_1$, $t_2$, $t_3$, rampa,
+temperatura do nitrog\^enio, temperatura alvo e setpoint do Forno 2) s\~ao
+persistidos em arquivo JSON no Raspberry Pi com escrita at\^omica e backup
+rotativo, assegurando integridade e auditoria.
+
+A IHM Web (\texttt{React} + TypeScript \cite{react}) \'e servida pelo pr\'oprio
+backend e organizada em modos de monitoramento e de configura\c{c}\~ao,
+incluindo um Diagrama de Tempos das fases $T_0$ a $T_3$, painel de controles e
+atuadores, gr\'aficos de tend\^encia por forno e formul\'ario de configura\c{c}\~ao
+do m\'etodo, consumindo a API REST e o WebSocket de telemetria \cite{fette2011}.
+
+\subsection{Ambiente e procedimento de valida\c{c}\~ao}
+
+A valida\c{c}\~ao foi conduzida em ambiente de desenvolvimento, sem o hardware
+f\'isico do processo, seguindo desenvolvimento orientado a testes
+\cite{beck2002}. Tr\^es frentes foram executadas:
+
+\begin{itemize}
+  \item \textbf{Backend (Python):} testes unit\'arios (FSM, PID, rampa,
+  persist\^encia, enlace serial), testes da API e testes funcionais de ciclo
+  completo e de seguran\c{c}a, com \texttt{pytest};
+  \item \textbf{Firmware:} testes \emph{host-based} da biblioteca \texttt{daqcore}
+  (parser JSON, watchdog e pulso da bomba) no ambiente \texttt{native} do
+  PlatformIO;
+  \item \textbf{IHM Web:} testes unit\'arios dos \emph{stores} de telemetria,
+  acionamento manual e tema, com Vitest.
+\end{itemize}
+
+Os testes funcionais e de seguran\c{c}a utilizam um simulador do \daq conectado
+ao backend por portas seriais virtuais criadas com \texttt{socat}, permitindo
+exercitar o ciclo $T_0 \to T_3$ e simular a perda de comunica\c{c}\~ao sem
+hardware. A Tabela~\ref{tab:criterios} consolida os crit\'erios de aceita\c{c}\~ao.
+
+\begin{table}[htbp]
+\centering
+\caption{Crit\'erios de aceita\c{c}\~ao da valida\c{c}\~ao.}
+\label{tab:criterios}
+\begin{tabular}{p{4.6cm}p{4.6cm}p{5.6cm}}
+\toprule
+\textbf{M\'etrica} & \textbf{Alvo} & \textbf{Forma de medi\c{c}\~ao} \\
+\midrule
+Linearidade da rampa (Tubo U) & Desvio $\le \pm 2\,\celsius$ do SP & Curva VP$\times$SP em bancada \\
+Estabilidade do Forno 2 & $\pm 5\,\celsius$ em torno de $700\,\celsius$ & Curva VP$\times$SP em bancada \\
+Comunica\c{c}\~ao a 4~Hz & 100\% em 4~h de estresse & Teste de estresse integrado \\
+Persist\^encia de par\^ametros & 100\% \'integra ap\'os rein\'icio & Teste funcional \\
+Seguran\c{c}a (watchdog) & Fornos desligados em $\le 1$~s & Teste de perda de serial \\
+\bottomrule
+\end{tabular}
+\end{table}

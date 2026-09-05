@@ -1,0 +1,89 @@
+% ======================================================================
+% ARTIGO CIENTÍFICO-TECNOLÓGICO — ESPECIAÇÃO DE MERCÚRIO (Automação e IHM)
+% Classe: article. Compilar: pdflatex -> bibtex -> pdflatex -> pdflatex.
+% ======================================================================
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[brazilian]{babel}
+\shorthandoff{"}                 % desativa shorthand " do babel brazilian
+\usepackage{mathptmx}            % fonte Times
+\usepackage[margin=2.5cm]{geometry}
+\setlength{\emergencystretch}{3em} % reduz linhas "overfull" sem afetar a justificação
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\graphicspath{{figures/}}
+\usepackage{booktabs}
+\usepackage{float}
+\usepackage{caption}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage{hyperref}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning}
+
+\newcommand{\celsius}{\ensuremath{^{\circ}\mathrm{C}}}
+\newcommand{\daq}{DAQ}
+
+\title{Automa\c{c}\~ao e supervis\~ao da prepara\c{c}\~ao de amostras para
+especia\c{c}\~ao de merc\'urio: arquitetura mestre-escravo com Raspberry Pi,
+Arduino e IHM Web}
+
+\author{
+William da Silva Vianna \\
+\small Instituto Federal Fluminense (IFF) --- Campos dos Goytacazes, RJ, Brasil
+\\[1.2em]
+Renato Gomes Sobral Barcellos \\
+\small Instituto Federal Fluminense (IFF) --- Campos dos Goytacazes, RJ, Brasil
+}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+\noindent A especia\c{c}\~ao de merc\'urio exige o controle rigoroso de uma
+sequ\^encia de prepara\c{c}\~ao de amostras --- deriva\c{c}\~ao com
+tetraetilborato de s\'odio, criofocaliza\c{c}\~ao em nitrog\^enio l\'iquido e
+libera\c{c}\~ao t\'ermica controlada ---, em que a qualidade da rampa de
+temperatura imposta ao Tubo U determina a correta separa\c{c}\~ao das esp\'ecies.
+Este artigo apresenta o projeto e a valida\c{c}\~ao de um sistema de automa\c{c}\~ao
+e supervis\~ao concebido para modernizar um sistema legado baseado em LabVIEW,
+adotando uma arquitetura mestre-escravo formada por um Raspberry Pi (l\'ogica de
+alto n\'ivel em Python), um Arduino Uno como m\'odulo de aquisi\c{c}\~ao de dados
+em tempo real e uma interface homem-m\'aquina (IHM) Web em React e TypeScript. O
+processo \'e modelado como uma m\'aquina de estados finita com quatro fases de
+acionamento e matriz de atuadores; o controle de temperatura combina uma
+estrat\'egia PID mista (raz\~ao de taxas abaixo de $0\,\celsius$ e PID em malha
+fechada acima) para a rampa do Tubo U e um controle em setpoint fixo de
+$700\,\celsius$ para o Forno 2. A comunica\c{c}\~ao entre as plataformas \'e feita
+por pacotes JSON em enlace serial a 4~Hz, com watchdog duplo que imp\~oe o retorno
+ao estado seguro em caso de falha. A valida\c{c}\~ao, conduzida por
+desenvolvimento orientado a testes, resultou em 67 testes automatizados
+aprovados distribu\'idos entre backend, firmware e IHM Web, evidenciando a
+viabilidade da arquitetura para atender aos requisitos funcionais e de
+seguran\c{c}a definidos. A valida\c{c}\~ao experimental em bancada com o processo
+f\'isico permanece como etapa de continuidade.
+\end{abstract}
+
+\vspace{0.5em}
+\noindent\textbf{Palavras-chave:} automa\c{c}\~ao; controle PID; especia\c{c}\~ao
+de merc\'urio; m\'aquina de estados finita; sistemas embarcados; interface
+homem-m\'aquina.
+
+\input{sections/introduction}
+\input{sections/literature}
+\input{sections/methodology}
+\input{sections/results}
+\input{sections/discussion}
+\input{sections/conclusion}
+
+\section*{Agradecimentos}
+\textit{[Agradecimentos opcionais --- a redigir pelos autores (ex.: \`a
+institui\c{c}\~ao e ao laborat\'orio).]}
+
+\bibliographystyle{plain}
+\bibliography{references}
+
+\end{document}

@@ -1,0 +1,55 @@
+% ======================================================================
+% SEÇÃO 1 — INTRODUÇÃO
+% ======================================================================
+\section{Introdu\c{c}\~ao}
+\label{sec:intro}
+
+O merc\'urio (Hg) \'e um poluente global cuja toxicidade e mobilidade dependem
+fortemente da esp\'ecie qu\'imica em que se encontra. A \emph{especia\c{c}\~ao}
+de merc\'urio --- a determina\c{c}\~ao das diferentes formas do elemento em uma
+amostra --- \'e, portanto, essencial para avalia\c{c}\~oes de risco e estudos
+biogeoqu\'imicos \cite{leermakers2005}. No sistema considerado neste trabalho,
+a etapa de \emph{prepara\c{c}\~ao de amostras} compreende uma sequ\^encia
+qu\'imica rigorosa: a amostra \'e derivatizada com tetraetilborato de s\'odio
+(TEBS), volatilizando as esp\'ecies de merc\'urio; um g\'as de arraste (h\'elio)
+conduz os vapores at\'e um Tubo U imerso em nitrog\^enio l\'iquido, onde ocorre a
+\emph{criofocaliza\c{c}\~ao} a aproximadamente $-196\,\celsius$; em seguida, o
+Tubo U \'e aquecido em uma rampa de temperatura e as esp\'ecies s\~ao liberadas
+progressivamente conforme sua volatilidade, atomizadas a $700\,\celsius$ e
+detectadas por espectrometria de absor\c{c}\~ao at\^omica
+\cite{bloom1989,liang1994,lumex}.
+
+A qualidade anal\'itica desse processo depende diretamente da
+\emph{linearidade da rampa de temperatura} imposta ao Tubo U: desvios na rampa
+provocam picos sobrepostos e an\'alises inv\'alidas. O equipamento originalmente
+empregado era controlado por um sistema supervis\'orio legado desenvolvido em
+LabVIEW, que apresentava limita\c{c}\~oes relevantes: (i) controle inadequado da
+rampa, sem garantir a linearidade na faixa de $-50\,\celsius$ a
+$230\,\celsius$; (ii) par\^ametros n\~ao persistentes e pouco rastre\'aveis entre
+execu\c{c}\~oes; (iii) interface propensa a erro humano; (iv) acoplamento entre a
+l\'ogica de aplica\c{c}\~ao e a execu\c{c}\~ao em tempo real; e (v) aus\^encia de
+parada segura autom\'atica diante de falhas de comunica\c{c}\~ao.
+
+Apesar da vasta literatura sobre m\'etodos de especia\c{c}\~ao
+\cite{bloom1989,liang1994,leermakers2005} e sobre controle de temperatura com
+controladores PID \cite{astrom2006,ogata2010}, h\'a uma lacuna no dom\'inio
+considerado: a disponibilidade de uma solu\c{c}\~ao aberta e de baixo custo que
+integre o sequenciamento da prepara\c{c}\~ao de amostras, o controle da rampa do
+Tubo U e uma IHM moderna com persist\^encia de par\^ametros e seguran\c{c}a
+funcional, em substitui\c{c}\~ao a plataformas propriet\'arias monol\'iticas.
+Nesse contexto, este artigo tem como objetivo apresentar o projeto, a
+implementa\c{c}\~ao e a valida\c{c}\~ao de um sistema de automa\c{c}\~ao e
+supervis\~ao para a prepara\c{c}\~ao de amostras em especia\c{c}\~ao de
+merc\'urio, baseado em uma arquitetura mestre-escravo composta por Raspberry Pi,
+Arduino Uno e IHM Web.
+
+A contribui\c{c}\~ao principal \'e a integra\c{c}\~ao coesa e verific\'avel de:
+(i) uma m\'aquina de estados finita com matriz de acionamento dos atuadores;
+(ii) uma estrat\'egia de controle PID mista que contorna a limita\c{c}\~ao de
+medi\c{c}\~ao do termopar na regi\~ao criog\^enica; (iii) um protocolo JSON
+aberto a 4~Hz; e (iv) mecanismos expl\'icitos de seguran\c{c}a (estado seguro e
+watchdog duplo). O artigo est\'a organizado da seguinte forma: a Se\c{c}\~ao~2
+apresenta a fundamenta\c{c}\~ao e os trabalhos relacionados; a Se\c{c}\~ao~3
+descreve os materiais e m\'etodos, incluindo a arquitetura e a implementa\c{c}\~ao;
+a Se\c{c}\~ao~4 apresenta os resultados da valida\c{c}\~ao; a Se\c{c}\~ao~5
+discute os resultados e as limita\c{c}\~oes; e a Se\c{c}\~ao~6 conclui o artigo.

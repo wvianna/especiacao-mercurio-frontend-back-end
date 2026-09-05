@@ -1,0 +1,65 @@
+% ======================================================================
+% SEÇÃO 4 — RESULTADOS
+% ======================================================================
+\section{Resultados}
+\label{sec:res}
+
+Os resultados reportados correspondem a execu\c{c}\~oes reais das su\'ites de
+testes automatizados realizadas no ambiente de desenvolvimento do projeto. A
+Tabela~\ref{tab:testes} consolida os resultados por camada.
+
+\begin{table}[htbp]
+\centering
+\caption{Resultado da execu\c{c}\~ao das su\'ites de testes automatizados.}
+\label{tab:testes}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Camada} & \textbf{Ferramenta} & \textbf{Arquivos} & \textbf{Testes} & \textbf{Resultado} \\
+\midrule
+Backend (Python) & pytest & 8 & 40 & 40 aprovados \\
+Firmware (\daq) & PlatformIO (host) & 1 & 14 & 14 aprovados \\
+IHM Web & Vitest & 4 & 13 & 13 aprovados \\
+\midrule
+\textbf{Total} & --- & 13 & 67 & 67 aprovados \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Testes de l\'ogica e integra\c{c}\~ao}
+
+Os testes do backend validaram as transi\c{c}\~oes da FSM e a matriz de
+acionamento em cada fase; o c\'alculo da sa\'ida do PID, a satura\c{c}\~ao e o
+anti-windup; o c\'alculo da taxa de aquecimento e a sele\c{c}\~ao das duas
+regi\~oes da rampa (raz\~ao de taxas abaixo de $0\,\celsius$ e PID acima); a
+escrita/leitura at\^omicas da persist\^encia com restaura\c{c}\~ao do backup; o
+codec JSON do enlace serial; e os endpoints da API. Os testes do firmware
+validaram o parser de pacotes JSON, a rejei\c{c}\~ao de JSON inv\'alido, a
+constru\c{c}\~ao do pacote de resposta, o watchdog (disparo, rearme e
+configura\c{c}\~ao do tempo limite) e o pulso de toggle da bomba. Os testes do
+frontend validaram o consumo da telemetria WebSocket, o sincronismo dos controles
+manuais com a telemetria e a persist\^encia da prefer\^encia de tema.
+
+\subsection{Testes funcionais e de seguran\c{c}a}
+
+Os testes funcionais exercitaram o ciclo autom\'atico $T_0 \to T_3$ com o
+simulador do \daq, confirmando que: (i) o ciclo somente inicia a partir do estado
+seguro; (ii) as dura\c{c}\~oes das fases seguem os par\^ametros configurados; e
+(iii) a telemetria publicada cont\'em o estado, o progresso da etapa e o
+progresso geral do ciclo, habilitando o Diagrama de Tempos da IHM. Os cen\'arios
+de seguran\c{c}a simularam a perda de comunica\c{c}\~ao serial e confirmaram as
+duas camadas de prote\c{c}\~ao: o watchdog do firmware desliga os fornos na
+aus\^encia de pacotes v\'alidos por mais de 1~s, e o watchdog do backend comuta a
+FSM para o estado seguro quando o \daq deixa de responder por mais de 1~s,
+atendendo ao crit\'erio de fornos desligados em $\le 1$~s.
+
+A Figura~\ref{fig:ihm} apresenta a IHM Web em opera\c{c}\~ao, exibindo o Diagrama
+de Tempos, o progresso da etapa, os controles e atuadores e os gr\'aficos de
+tend\^encia por forno.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.9\linewidth]{frontendweb.png}
+\caption{IHM Web em modo de monitoramento.}
+\label{fig:ihm}
+\par\vspace{2pt}{\footnotesize Fonte: captura de tela da IHM do projeto.}
+\end{figure}

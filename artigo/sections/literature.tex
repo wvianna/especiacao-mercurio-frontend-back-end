@@ -1,0 +1,79 @@
+% ======================================================================
+% SEÇÃO 2 — FUNDAMENTAÇÃO E TRABALHOS RELACIONADOS
+% ======================================================================
+\section{Fundamenta\c{c}\~ao e trabalhos relacionados}
+\label{sec:fund}
+
+\subsection{Especia\c{c}\~ao de merc\'urio e instrumenta\c{c}\~ao anal\'itica}
+
+A determina\c{c}\~ao de esp\'ecies de merc\'urio em concentra\c{c}\~oes tra\c{c}o
+exige etapas de deriva\c{c}\~ao qu\'imica que convertam as esp\'ecies em formas
+vol\'ateis e est\'aveis, adequadas \`a separa\c{c}\~ao e \`a detec\c{c}\~ao.
+Bloom \cite{bloom1989} e Liang e colaboradores \cite{liang1994} estabeleceram os
+protocolos de etila\c{c}\~ao em fase aquosa com NaBEt$_4$ e de separa\c{c}\~ao
+por cromatografia gasosa com detec\c{c}\~ao por fluoresc\^encia at\^omica em vapor
+frio, que s\~ao a base qu\'imica do processo aqui automatizado. Revis\~oes como a
+de Leermakers e colaboradores \cite{leermakers2005} evidenciam que a
+repetibilidade das condi\c{c}\~oes de prepara\c{c}\~ao --- em particular da rampa
+t\'ermica --- \'e um fator cr\'itico de qualidade dos m\'etodos de
+especia\c{c}\~ao. No plano instrumental, equipamentos comerciais dedicados, como
+o analisador RA-915 da Lumex \cite{lumex}, integram a atomiza\c{c}\~ao e a
+detec\c{c}\~ao, mas tipicamente n\~ao exp\~oem ao usu\'ario o controle fino do
+sequenciamento da prepara\c{c}\~ao que antecede a medida --- refor\c{c}ando a
+relev\^ancia de um sistema de automa\c{c}\~ao dedicado a essa etapa.
+
+\subsection{Controle de processos e rampas de temperatura}
+
+Em processos cuja vari\'avel controlada deve seguir uma trajet\'oria no tempo,
+como a rampa linear de temperatura do Tubo U, o controlador
+proporcional-integral-derivativo (PID) \'e a solu\c{c}\~ao mais difundida
+\cite{astrom2006,ogata2010}. Em sua forma cont\'inua ideal, a sa\'ida \'e dada
+por
+\begin{equation}
+  u(t) = K_p \left[ e(t) + \frac{1}{T_i}\int_0^t e(\tau)\,d\tau
+         + T_d \frac{d\,e(t)}{dt} \right],
+  \label{eq:pid}
+\end{equation}
+em que $K_p$ \'e o ganho proporcional, $T_i$ o tempo integral e $T_d$ o tempo
+derivativo. Implementa\c{c}\~oes digitais devem tratar a satura\c{c}\~ao da sa\'ida
+(anti-windup) e aplicar a a\c{c}\~ao derivativa sobre a vari\'avel de processo,
+evitando o \emph{derivative kick} \cite{astrom2006}. Quando a medi\c{c}\~ao n\~ao
+\'e confi\'avel em parte da faixa --- como abaixo do piso de leitura do termopar
+---, uma estrat\'egia de raz\~ao de taxas em malha aberta pode ser combinada ao
+PID, calculando a vari\'avel manipulada proporcionalmente \`a rela\c{c}\~ao entre
+a taxa de aquecimento desejada e a taxa do sistema.
+
+O controle sequencial de processos \'e frequentemente modelado por
+\emph{m\'aquinas de estado finitas} (FSM), que associam a cada estado um conjunto
+de sa\'idas ativas (matriz de acionamento) e tratam de forma sistem\'atica
+eventos de parada e emerg\^encia \cite{wagner2006}.
+
+\subsection{Plataformas embarcadas e comunica\c{c}\~ao}
+
+A literatura e a pr\'atica de instrumenta\c{c}\~ao anal\'itica adotam, com
+crescente frequ\^encia, plataformas abertas de baixo custo: microcontroladores
+como o Arduino \cite{arduino} e computadores de placa \'unica como o Raspberry Pi
+\cite{raspberrypi}. A separa\c{c}\~ao entre uma camada de supervis\~ao de alto
+n\'ivel e um m\'odulo de aquisi\c{c}\~ao em tempo real melhora a confiabilidade e
+a manutenibilidade. A medi\c{c}\~ao de temperatura por termopares tipo K \'e
+comumente digitalizada por circuitos integrados com compensa\c{c}\~ao de
+jun\c{c}\~ao fria, como o MAX6675, que entrega 12~bits com resolu\c{c}\~ao de
+$0{,}25\,\celsius$ via SPI \cite{max6675,nist_its90}.
+
+A comunica\c{c}\~ao entre plataformas \'e realizada com pacotes JSON
+\cite{bray2017} em enlace serial, e a IHM Web consome uma API REST e telemetria
+em tempo real via WebSocket \cite{fette2011}. Frameworks modernos como FastAPI
+\cite{fastapi} e React \cite{react} permitem construir supervis\'orios acess\'iveis
+por navegador, em contraste com plataformas propriet\'arias monol\'iticas
+(frequentemente baseadas em LabVIEW) que acoplam controle, interface e
+aquisi\c{c}\~ao em um \'unico ambiente, com custo elevado de licenciamento e
+evolu\c{c}\~ao restrita.
+
+\subsection{S\'intese e lacuna}
+
+A revis\~ao indica que n\~ao h\'a, no dom\'inio considerado, uma solu\c{c}\~ao
+aberta e de baixo custo que integre, de forma coesa e segura, o sequenciamento da
+prepara\c{c}\~ao de amostras, o controle PID da rampa do Tubo U e uma IHM Web com
+persist\^encia de par\^ametros. Este artigo busca preencher essa lacuna, com
+\^enfase na rastreabilidade entre requisitos, implementa\c{c}\~ao e valida\c{c}\~ao
+por testes.
