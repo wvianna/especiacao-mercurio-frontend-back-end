@@ -82,12 +82,12 @@ O modelo de unidade está em [`scripts/systemd/especiacao-mercurio-ihm.service.t
 
 **1. Conclua a seção [Instalação](#instalação) uma única vez** — o serviço não deve precisar de rede ou `npm` durante o boot.
 
-**2. Instale a unidade** (os marcadores `__ROOT__` e `__USER__` são substituídos pelo caminho absoluto do repositório e pelo usuário atual):
+**2. Instale a unidade** (raiz e usuário já preenchidos: `/home/dietpi/especiacao-mercurio-frontend-back-end` · `dietpi`):
 
 ```bash
-sed -e "s|__ROOT__|$PWD|g" -e "s|__USER__|$USER|g" \
-    scripts/systemd/especiacao-mercurio-ihm.service.template \
-  | sudo tee /etc/systemd/system/especiacao-mercurio-ihm.service > /dev/null
+sudo cp scripts/systemd/especiacao-mercurio-ihm.service.template \
+        /etc/systemd/system/especiacao-mercurio-ihm.service
+# outra raiz/usuário: ajuste User=, Group=, WorkingDirectory=, Exec* e PIDFile=
 sudo systemctl daemon-reload
 ```
 

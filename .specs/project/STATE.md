@@ -10,7 +10,7 @@
 - Persistência de parâmetros: arquivo JSON em disco no RPi (leitura/escrita atômica + backup rotativo). **Decidido**.
 - Gráficos de tendência: VP×SP, °C/s e PWM, amostragem 4 Hz, buffer ≥ 15 min. **Decidido**.
 - Frontend: React + Vite + TypeScript + canvas customizado (sem lib de gráficos pesada). **Decidido**.
-- Implantação como serviço: unidade systemd em `scripts/systemd/especiacao-mercurio-ihm.service.template` (`Type=forking` + `PIDFile=logs/backend.pid`), usando `start.sh`/`stop.sh` como `ExecStart`/`ExecStop`. **Decidido**.
+- Implantação como serviço: unidade systemd em `scripts/systemd/especiacao-mercurio-ihm.service.template` (`Type=forking` + `PIDFile=logs/backend.pid`), com `start.sh`/`stop.sh` como `ExecStart`/`ExecStop`. **Raiz alvo: `/home/dietpi/especiacao-mercurio-frontend-back-end` (usuário `dietpi`) — DietPi/RPi**. **Decidido**.
 
 ## Open Questions / Gray Areas
 

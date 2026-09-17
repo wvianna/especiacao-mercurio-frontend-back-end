@@ -1,22 +1,24 @@
 # ============================================================================
-# especiacao-mercurio-ihm.service — modelo de unidade systemd (escopo system)
+# especiacao-mercurio-ihm.service — unidade systemd (escopo system)
 #
-# Antes de instalar, substitua os marcadores:
-#   __ROOT__  -> caminho absoluto do repositório
-#                (ex.: /home/<usuario>/git/especiacao-mercurio-ihm)
-#   __USER__  -> usuário dono do repositório (ex.: william)
+# Implantação padrão (Raspberry Pi / DietPi) — raiz e usuário preenchidos:
+#   raiz   : /home/dietpi/especiacao-mercurio-frontend-back-end
+#   usuário: dietpi
 #
 # Instalação (detalhes na seção "Serviço systemd" do README.md):
-#   sed -e "s|__ROOT__|$PWD|g" -e "s|__USER__|$USER|g" \
-#       scripts/systemd/especiacao-mercurio-ihm.service.template \
-#     | sudo tee /etc/systemd/system/especiacao-mercurio-ihm.service > /dev/null
+#   cd /home/dietpi/especiacao-mercurio-frontend-back-end
+#   sudo cp scripts/systemd/especiacao-mercurio-ihm.service.template \
+#           /etc/systemd/system/especiacao-mercurio-ihm.service
 #   sudo systemctl daemon-reload
 #   sudo systemctl enable --now especiacao-mercurio-ihm
+#
+# Para outra raiz/usuário, ajuste: Documentation, User, Group, WorkingDirectory,
+# ExecStartPre, ExecStart, ExecStop e PIDFile.
 # ============================================================================
 
 [Unit]
 Description=Sistema de Especiação de Mercúrio — Backend (FastAPI) + IHM Web
-Documentation=file://__ROOT__/README.md
+Documentation=file:///home/dietpi/especiacao-mercurio-frontend-back-end/README.md
 After=network.target
 
 [Service]
@@ -24,12 +26,12 @@ After=network.target
 # portanto o systemd deve aguardar o término do script (Type=forking).
 Type=forking
 
-User=__USER__
-# Ajuste se o grupo primário do usuário tiver nome diferente de __USER__.
-Group=__USER__
+User=dietpi
+# Ajuste se o grupo primário do usuário tiver nome diferente de dietpi.
+Group=dietpi
 # Necessário para acessar a serial do Arduino (/dev/ttyUSB0 ou /dev/ttyACM0).
 SupplementaryGroups=dialout
-WorkingDirectory=__ROOT__
+WorkingDirectory=/home/dietpi/especiacao-mercurio-frontend-back-end
 
 # Variáveis lidas por scripts/start.sh e pelo backend (backend/app/run.py).
 # Podem ser sobrescritas por drop-in (systemctl edit ...) ou pelo arquivo
@@ -42,10 +44,10 @@ EnvironmentFile=-/etc/default/especiacao-mercurio-ihm
 
 # Remove PIDs órfãos deixados por uma execução manual anterior de start.sh
 # (o prefixo "-" faz o systemd ignorar falhas deste comando).
-ExecStartPre=-__ROOT__/scripts/stop.sh
-ExecStart=__ROOT__/scripts/start.sh
-ExecStop=__ROOT__/scripts/stop.sh
-PIDFile=__ROOT__/logs/backend.pid
+ExecStartPre=-/home/dietpi/especiacao-mercurio-frontend-back-end/scripts/stop.sh
+ExecStart=/home/dietpi/especiacao-mercurio-frontend-back-end/scripts/start.sh
+ExecStop=/home/dietpi/especiacao-mercurio-frontend-back-end/scripts/stop.sh
+PIDFile=/home/dietpi/especiacao-mercurio-frontend-back-end/logs/backend.pid
 
 # A primeira execução pode criar o venv do backend e instalar dependências.
 TimeoutStartSec=600
