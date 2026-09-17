@@ -76,6 +76,11 @@ cd ..
 > [!TIP]
 > Configure a porta serial do Arduino antes de iniciar: `SERIAL_PORT=/dev/ttyACM0 ./scripts/start.sh`
 
+> [!NOTE]
+> Em um clone novo o `start.sh` prepara o que faltar: venv/dependências do backend e
+> `npm ci` no frontend; sem `--dev` ele também compila a IHM (`frontend/dist`).
+> A seção [Instalação](#instalação) continua sendo o caminho recomendado.
+
 ### Serviço systemd (início automático no boot)
 
 O modelo de unidade está em [`scripts/systemd/especiacao-mercurio-ihm.service.template`](scripts/systemd/especiacao-mercurio-ihm.service.template): um serviço `Type=forking` que executa `scripts/start.sh` / `scripts/stop.sh` e acompanha o PID registrado em `logs/backend.pid`.
