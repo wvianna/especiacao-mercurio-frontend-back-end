@@ -85,3 +85,4 @@ monografia/*.synctex.gz
 monografia/_minted*/s
 
 *.pid
+logs/*
