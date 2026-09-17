@@ -84,3 +84,4 @@ monografia/*.fdb_latexmk
 monografia/*.synctex.gz
 monografia/_minted*/s
 
+*.pid
