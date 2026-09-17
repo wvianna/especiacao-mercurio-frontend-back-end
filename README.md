@@ -4,7 +4,7 @@
 [![Firmware](https://img.shields.io/badge/firmware-Arduino_Uno-00979D)](#firmware)
 [![Frontend](https://img.shields.io/badge/frontend-React%2BTS-61DAFB)](#ihm)
 
-Sistema de automação e supervisão para **preparação de amostras em especiação de mercúrio**: controle do acionamento das válvulas, bomba e aquecedores, e controle da rampa de temperatura do Tubo U (−50 → 230 °C) e do Forno 2 (700 °C), com Raspberry Pi (Python), Arduino Uno (DAQ em tempo real) e IHM Web.
+Sistema de automação e supervisão para **preparação de amostras em especiação de mercúrio**: controle do acionamento das válvulas, bomba e aquecedores, e controle da rampa de temperatura do Tubo U (−190 → 230 °C) e do Forno 2 (700 °C), com Raspberry Pi (Python), Arduino Uno (DAQ em tempo real) e IHM Web.
 
 > [!NOTE]
 > Este projeto moderniza um sistema legado (LabVIEW) e é guiado pelas especificações em [`docs/especificacao.md`](docs/especificacao.md) e [`docs/requisitos.md`](docs/requisitos.md).
@@ -76,6 +76,53 @@ cd ..
 > [!TIP]
 > Configure a porta serial do Arduino antes de iniciar: `SERIAL_PORT=/dev/ttyACM0 ./scripts/start.sh`
 
+### Serviço systemd (início automático no boot)
+
+O modelo de unidade está em [`scripts/systemd/especiacao-mercurio-ihm.service.template`](scripts/systemd/especiacao-mercurio-ihm.service.template): um serviço `Type=forking` que executa `scripts/start.sh` / `scripts/stop.sh` e acompanha o PID registrado em `logs/backend.pid`.
+
+**1. Conclua a seção [Instalação](#instalação) uma única vez** — o serviço não deve precisar de rede ou `npm` durante o boot.
+
+**2. Instale a unidade** (os marcadores `__ROOT__` e `__USER__` são substituídos pelo caminho absoluto do repositório e pelo usuário atual):
+
+```bash
+sed -e "s|__ROOT__|$PWD|g" -e "s|__USER__|$USER|g" \
+    scripts/systemd/especiacao-mercurio-ihm.service.template \
+  | sudo tee /etc/systemd/system/especiacao-mercurio-ihm.service > /dev/null
+sudo systemctl daemon-reload
+```
+
+**3. Habilite e inicie** (o `ExecStartPre` da unidade encerra uma instância manual de `./scripts/start.sh`, se houver):
+
+```bash
+sudo systemctl enable --now especiacao-mercurio-ihm
+```
+
+| Ação | Comando |
+| ---- | ------- |
+| Estado e PID do backend | `systemctl status especiacao-mercurio-ihm` |
+| Iniciar · parar · reiniciar | `sudo systemctl {start,stop,restart} especiacao-mercurio-ihm` |
+| Logs do serviço (journal) | `journalctl -u especiacao-mercurio-ihm -f` |
+| Logs do backend (arquivo) | `tail -f logs/backend.log` |
+| Desinstalar | `sudo systemctl disable --now especiacao-mercurio-ihm && sudo rm /etc/systemd/system/especiacao-mercurio-ihm.service` |
+
+**Personalização** — use um *drop-in* (não edite a cópia instalada em `/etc/systemd/system/`):
+
+```bash
+sudo systemctl edit especiacao-mercurio-ihm
+```
+
+```ini
+[Service]
+Environment=SERIAL_PORT=/dev/ttyACM0
+Environment=PORT=8000
+```
+
+> [!IMPORTANT]
+> O serviço roda como o usuário dono do repositório com `SupplementaryGroups=dialout` — exigido para acessar `/dev/ttyUSB0` e `/dev/ttyACM0`. Alternativamente, defina as variáveis em `/etc/default/especiacao-mercurio-ihm` (`SERIAL_PORT=…`, `PORT=…`, `HOST=…`), lido pela unidade como `EnvironmentFile` opcional.
+
+> [!TIP]
+> Para subir também o servidor de desenvolvimento do Vite junto ao serviço, crie um *drop-in* com `ExecStart=` (linha vazia, que limpa o valor anterior) seguido de `ExecStart=<caminho-do-repo>/scripts/start.sh --dev`.
+
 ### Configuração
 
 | Variável | Padrão | Descrição |
@@ -136,7 +183,7 @@ cd ..
 ├── backend/        # Python + FastAPI (FSM, PID, persistência, API + WebSocket)
 ├── firmware/       # Arduino Uno (PlatformIO): I/O, PWM, termopares SPI, watchdog
 ├── frontend/       # React + Vite + TS: Diagrama de Tempos, atuadores, gráficos por forno e configuração
-├── scripts/        # start.sh · stop.sh · firmware.sh · test.sh
+├── scripts/        # start.sh · stop.sh · firmware.sh · test.sh · systemd/ (unidade de serviço)
 ├── docs/           # Especificação, requisitos, HANDSOFF e TDD
 └── .specs/         # Planejamento Spec-Driven (spec/design/tasks por feature)
 ```
@@ -147,6 +194,7 @@ cd ..
 - **[TDD](docs/TDD.md)** — documento de design técnico.
 - **[Especificação](docs/especificacao.md)** e **[Requisitos](docs/requisitos.md)** — base do processo analítico.
 - **[.specs](.specs/)** — planejamento Spec-Driven com specs, designs e tasks por feature.
+- **[Estatísticas](docs/estatisticas.md)** — contagem de linhas de código e documentação por área.
 
 ## Autoria
 

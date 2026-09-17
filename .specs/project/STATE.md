@@ -10,6 +10,7 @@
 - Persistência de parâmetros: arquivo JSON em disco no RPi (leitura/escrita atômica + backup rotativo). **Decidido**.
 - Gráficos de tendência: VP×SP, °C/s e PWM, amostragem 4 Hz, buffer ≥ 15 min. **Decidido**.
 - Frontend: React + Vite + TypeScript + canvas customizado (sem lib de gráficos pesada). **Decidido**.
+- Implantação como serviço: unidade systemd em `scripts/systemd/especiacao-mercurio-ihm.service.template` (`Type=forking` + `PIDFile=logs/backend.pid`), usando `start.sh`/`stop.sh` como `ExecStart`/`ExecStop`. **Decidido**.
 
 ## Open Questions / Gray Areas
 
@@ -32,6 +33,7 @@
 - **pydantic**: dar default a campos obrigatórios quando o modelo tem instância default (ex.: `RampConfig.time_s`).
 - **FSM/atuadores**: manter o payload aninhado (`pwm.u`/`pwm.f2`) consistente na FSM para casar com o contrato do TDD.
 - **Socat + pyserial** funciona como porta virtual para testes E2E reais do enlace.
+- **`start.sh` daemoniza** (nohup + `logs/*.pid`): em systemd exige `Type=forking` com `PIDFile` — `Type=simple` considera o serviço encerrado assim que o script retorna; `ExecStartPre=-…/stop.sh` limpa PIDs órfãos de execuções manuais.
 
 ## Todos
 

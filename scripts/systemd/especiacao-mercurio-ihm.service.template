@@ -1,0 +1,61 @@
+# ============================================================================
+# especiacao-mercurio-ihm.service — modelo de unidade systemd (escopo system)
+#
+# Antes de instalar, substitua os marcadores:
+#   __ROOT__  -> caminho absoluto do repositório
+#                (ex.: /home/<usuario>/git/especiacao-mercurio-ihm)
+#   __USER__  -> usuário dono do repositório (ex.: william)
+#
+# Instalação (detalhes na seção "Serviço systemd" do README.md):
+#   sed -e "s|__ROOT__|$PWD|g" -e "s|__USER__|$USER|g" \
+#       scripts/systemd/especiacao-mercurio-ihm.service.template \
+#     | sudo tee /etc/systemd/system/especiacao-mercurio-ihm.service > /dev/null
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now especiacao-mercurio-ihm
+# ============================================================================
+
+[Unit]
+Description=Sistema de Especiação de Mercúrio — Backend (FastAPI) + IHM Web
+Documentation=file://__ROOT__/README.md
+After=network.target
+
+[Service]
+# start.sh daemoniza o backend com nohup e registra o PID em logs/backend.pid,
+# portanto o systemd deve aguardar o término do script (Type=forking).
+Type=forking
+
+User=__USER__
+# Ajuste se o grupo primário do usuário tiver nome diferente de __USER__.
+Group=__USER__
+# Necessário para acessar a serial do Arduino (/dev/ttyUSB0 ou /dev/ttyACM0).
+SupplementaryGroups=dialout
+WorkingDirectory=__ROOT__
+
+# Variáveis lidas por scripts/start.sh e pelo backend (backend/app/run.py).
+# Podem ser sobrescritas por drop-in (systemctl edit ...) ou pelo arquivo
+# opcional /etc/default/especiacao-mercurio-ihm (prefixo "-" = arquivo opcional).
+Environment=SERIAL_PORT=/dev/ttyUSB0
+Environment=PORT=8000
+Environment=HOST=0.0.0.0
+# Environment=PATH=/usr/local/bin:/usr/bin:/bin   # necessário apenas com --dev (npm)
+EnvironmentFile=-/etc/default/especiacao-mercurio-ihm
+
+# Remove PIDs órfãos deixados por uma execução manual anterior de start.sh
+# (o prefixo "-" faz o systemd ignorar falhas deste comando).
+ExecStartPre=-__ROOT__/scripts/stop.sh
+ExecStart=__ROOT__/scripts/start.sh
+ExecStop=__ROOT__/scripts/stop.sh
+PIDFile=__ROOT__/logs/backend.pid
+
+# A primeira execução pode criar o venv do backend e instalar dependências.
+TimeoutStartSec=600
+# Encerra todos os processos do cgroup (backend e, com --dev, o servidor Vite).
+KillMode=control-group
+TimeoutStopSec=30
+
+# Reinicia somente em falha (crash do backend), não em parada explícita.
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
