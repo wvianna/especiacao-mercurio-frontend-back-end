@@ -37,6 +37,43 @@ graph LR
 | Firmware   | C++ · ArduinoJson · PlatformIO | `firmware/` | USB serial 115200 baud |
 | IHM Web    | React 18 · Vite · TypeScript | `frontend/` | servida pelo backend |
 
+### Portas TCP em uso
+
+```mermaid
+flowchart LR
+    subgraph EXT["Cliente"]
+        BROWSER["Navegador com a IHM Web<br/>http://IP-do-Raspberry:8000"]
+    end
+
+    subgraph RPI["Raspberry Pi"]
+        subgraph P8000["Porta TCP 8000 — Backend FastAPI (uvicorn)"]
+            R_DIST["/ — IHM compilada (frontend/dist)"]
+            R_API["/api/* — HTTP"]
+            R_WS["/ws/telemetry — WebSocket"]
+        end
+        subgraph P5173["Porta TCP 5173 — Vite dev (somente com --dev)"]
+            R_DEV["IHM em desenvolvimento<br/>bind: localhost"]
+        end
+    end
+
+    R_DAQ["DAQ Arduino Uno<br/>/dev/ttyUSB0 a 115200 baud (serial, não TCP)"]
+
+    BROWSER -->|"HTTP 8000"| R_DIST
+    BROWSER -->|"HTTP 8000"| R_API
+    BROWSER <-->|"WebSocket 8000"| R_WS
+    R_DEV -->|"API/WS em localhost:8000"| P8000
+    P8000 ==>|"USB serial"| R_DAQ
+```
+
+| Porta TCP | Serviço | Escuta em | Endpoints | Quando existe |
+| --------- | ------- | --------- | --------- | ------------- |
+| **8000** | Backend FastAPI (uvicorn) | `0.0.0.0` — todas as interfaces | `/` (IHM compilada), `/api/*` (HTTP), `/ws/telemetry` (WebSocket) | Sempre (`PORT=<n> ./scripts/start.sh` altera) |
+| **5173** | Vite dev server | `localhost` — apenas a própria máquina | página da IHM em desenvolvimento | Somente com `./scripts/start.sh --dev` |
+| — | Enlace serial do DAQ | `/dev/ttyUSB0` a 115200 baud | JSON de uma linha por ciclo (4 Hz) | Sempre — **não é TCP** |
+
+- Em produção (sem `--dev`) apenas a porta **8000** fica aberta: a IHM é servida na mesma origem da API e do WebSocket.
+- No modo `--dev`, a página em **:5173** consome a API em `http://localhost:8000` (padrão de `VITE_API_BASE`); para acesso remoto use a IHM compilada em **:8000** ou defina `VITE_API_BASE`.
+
 ## Pré-requisitos
 
 - Python 3.11+
