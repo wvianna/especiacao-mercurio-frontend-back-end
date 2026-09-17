@@ -27,7 +27,7 @@ dist/
 .eggs/
 
 # Arquivos de dados gerados em runtime
-#backend/data/
+!backend/data/*
 
 # ──────────────────────────────────────────────
 # PlatformIO / Firmware

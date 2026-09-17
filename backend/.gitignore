@@ -1,5 +1,6 @@
-# dados gerados em runtime
-data/
+# dados gerados em runtime (apenas os parâmetros iniciais são versionados)
+data/*
+!data/params.json
 .venv/
 __pycache__/
 *.pyc
