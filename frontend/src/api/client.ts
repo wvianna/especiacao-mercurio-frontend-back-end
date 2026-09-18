@@ -1,6 +1,12 @@
 import type { Config, ManualState } from '../types';
 
-export const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:8000';
+// Em produção a IHM é servida pelo próprio backend: os comandos devem ir para a
+// MESMA origem da página (senão um navegador remoto enviaria tudo para o próprio
+// localhost). No modo dev (Vite :5173) a API continua em localhost:8000.
+// VITE_API_BASE sobrescreve ambos os casos.
+export const API_BASE =
+  import.meta.env.VITE_API_BASE ??
+  (import.meta.env.DEV ? 'http://localhost:8000' : '');
 
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
