@@ -186,6 +186,7 @@ Environment=PORT=8000
 5. **Diagrama de Tempos**: faixas T₀–T₃ com set-points, matriz de atuadores e LED de status por dispositivo (vermelho = ligado, cinza = desligado).
 6. **Gráficos de Tendência**: um painel por forno com temperatura/setpoint (°C, eixo esquerdo) e PWM (%, eixo direito).
 7. **Configuração do Método** (modo CONFIG): edite tempos T₁/T₂/T₃, rampa (incl. PWM fixo ≤ 0 °C), temperatura do N₂ e ganhos PID; use **LER** e **SALVAR CONFIGURAÇÕES** (persiste em disco).
+8. **Ajuda**: botão no cabeçalho abre as instruções de funcionamento do processo com a Figura 11 e o link do projeto no GitHub.
 
 ## Firmware
 

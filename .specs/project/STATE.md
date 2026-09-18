@@ -12,6 +12,7 @@
 - Frontend: React + Vite + TypeScript + canvas customizado (sem lib de gráficos pesada). **Decidido**.
 - Implantação como serviço: unidade systemd em `scripts/systemd/especiacao-mercurio-ihm.service.template` (`Type=forking` + `PIDFile=logs/backend.pid`), com `start.sh`/`stop.sh` como `ExecStart`/`ExecStop`. **Raiz alvo: `/home/dietpi/especiacao-mercurio-frontend-back-end` (usuário `dietpi`) — DietPi/RPi**. **Decidido**.
 - Controle do Tubo U abaixo de 0 °C: PWM fixo persistido (`ramp.pwm_below_zero`, 0–255, default 128) em malha aberta; PID assume em T > 0 °C. A estratégia de razão de taxas/curva Taxa × PWM foi suprimida. **Decidido** (solicitação do operador, 2026-09-18).
+- Ajuda na IHM: botão no cabeçalho abre painel com instruções do processo, Figura 11 embarcada em `frontend/src/assets/` (offline) e link do repositório GitHub. **Decidido** (2026-09-18).
 
 ## Open Questions / Gray Areas
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { StatusBar } from './components/StatusBar';
 import { TrendChart } from './components/TrendChart';
 import { ConfigPanel } from './components/ConfigPanel';
@@ -7,6 +7,7 @@ import { TimingDiagram } from './components/TimingDiagram';
 import { StageProgress } from './components/StageProgress';
 import { ActuatorPanel } from './components/ActuatorPanel';
 import { ThemeToggle } from './components/ThemeToggle';
+import { HelpDialog } from './components/HelpDialog';
 import { useTelemetry } from './store/telemetry';
 import { connectTelemetry } from './ws/connection';
 import { api } from './api/client';
@@ -20,6 +21,8 @@ export function App() {
   const [connected, setConnected] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [view, setView] = useState<ViewMode>('MONITOR');
+  const [helpOpen, setHelpOpen] = useState(false);
+  const helpBtnRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const dispose = connectTelemetry(apply, setConnected);
@@ -47,6 +50,16 @@ export function App() {
         </div>
 
         <div className="header-actions">
+          <button
+            ref={helpBtnRef}
+            className="help-btn"
+            onClick={() => setHelpOpen(true)}
+            aria-label="Abrir ajuda com instruções de funcionamento do processo"
+            data-tip="AJUDA — instruções de funcionamento do processo, Figura 11 e repositório do projeto"
+            data-tip-pos="bottom"
+          >
+            ?
+          </button>
           <ThemeToggle />
           <div className="view-toggle" aria-label="Modo de exibição">
             <button
@@ -117,6 +130,14 @@ export function App() {
       ) : (
         <ConfigView />
       )}
+
+      <HelpDialog
+        open={helpOpen}
+        onClose={() => {
+          setHelpOpen(false);
+          helpBtnRef.current?.focus();
+        }}
+      />
     </div>
   );
 }
