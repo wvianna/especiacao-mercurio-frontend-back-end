@@ -63,7 +63,7 @@ graph TD
 - **Reuses**: TDD "PID misto".
 
 ### RampController
-- **Purpose**: calcular VM do Tubo U (razão de taxas abaixo de 0 °C, PID acima).
+- **Purpose**: calcular VM do Tubo U (PWM fixo persistido `ramp.pwm_below_zero` com T ≤ 0 °C; PID acima).
 - **Location**: `backend/app/ramp.py`
 - **Interfaces**:
   - `compute(t_current, dt) -> float`
@@ -110,7 +110,7 @@ class Params(BaseModel):
     pid_u: PIDGains
     pid_f2: PIDGains
     times_s: dict  # t1, t2, t3
-    ramp: RampConfig  # time_s, nitrogen_temp_c, target_temp_c
+    ramp: RampConfig  # time_s, nitrogen_temp_c, target_temp_c, pwm_below_zero
     setpoints: dict  # f2_c
 ```
 

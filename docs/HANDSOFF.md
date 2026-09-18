@@ -30,7 +30,7 @@ graph LR
 
 - **Backend (`backend/app/`)**
   - `fsm.py` — Máquina de Estados (SAFE, T₀–T₃, MANUAL) + matriz de atuadores.
-  - `pid.py` / `ramp.py` — PID do Forno 2 e rampa do Tubo U (razão de taxas T<0, PID T≥0) + °C/s.
+  - `pid.py` / `ramp.py` — PID do Forno 2 e rampa do Tubo U (PWM fixo persistido T≤0 °C, PID T>0 °C) + °C/s.
   - `serial_link.py` — enlace pyserial com codec JSON e reconexão.
   - `loop.py` — thread de controle a 4 Hz, watchdog (1 s sem resposta → SAFE) e telemetria.
   - `config_store.py` — persistência atômica de parâmetros com backup rotativo.
@@ -38,7 +38,7 @@ graph LR
 - **Firmware (`firmware/`)**
   - `src/pin_map.h` — mapa de I/O, Safe State e `PUMP_PULSE_MS`.
   - `src/actuator_driver.*` — aplica válvulas/PWM e o **pulso de toggle da bomba**.
-  - `src/thermocouple_reader.*` — leitura SPI dos termopares (MAX31855).
+  - `src/thermocouple_reader.*` — leitura SPI dos termopares (MAX6675; leitura ≥ 0 °C).
   - `lib/daqcore/` — parser JSON, watchdog e `pump_toggle` (portáveis, testáveis em host).
 - **Frontend (`frontend/src/`)**
   - `App.tsx` — layout com modos MONITOR/CONFIG, seletor AUTO/MANUAL e integração WS.
@@ -215,18 +215,15 @@ pio run -e uno -t upload  # grava no Arduino (via USB)
 
 ---
 
-## 6. Interpolação da curva de aquecimento (Taxa × % PWM)
+## 6. PWM fixo do Tubo U abaixo de 0 °C (calibração)
 
-Para calcular a VM quando a temperatura do Tubo U está abaixo de 0 °C:
+O termopar do Tubo U não fornece leitura confiável abaixo de 0 °C (MAX6675: faixa ≥ 0 °C). Entre −196 °C (N₂) e 0 °C o controle opera em **malha aberta** com potência fixa persistida (`ramp.pwm_below_zero`, 0–255):
 
-1. **Medir a taxa real do sistema** em bancada: com o Forno 1 em um PWM fixo conhecido, registrar a derivada de temperatura (°C/s) na faixa de interesse.
-2. Construir a curva **Taxa de Aquecimento × % PWM** com alguns pontos (ex.: 20%, 50%, 80%) e interpolar linearmente entre os pontos medidos.
-3. No código, informar a taxa do sistema via `RampController.set_system_rate(rate)` (calibração).
-4. O controle calcula a VM:
+1. **Medir a resposta do Tubo U em bancada**: na faixa criogênica, registrar a taxa de aquecimento (°C/s) para alguns valores de PWM (ex.: 20%, 50%, 80%) e escolher o ponto adequado para a subida de −196 °C até 0 °C.
+2. Persistir o valor via IHM (campo **PWM fixo ≤ 0 °C** → SALVAR CONFIGURAÇÕES) ou `PUT /api/config` (`ramp.pwm_below_zero`).
+3. A partir de **T > 0 °C** o PID assume a malha fechada seguindo o setpoint dinâmico da rampa até 230 °C.
 
-$$\text{VM} = \frac{\text{Taxa de Aquecimento}_{\text{usuário}}}{\text{Taxa de Aquecimento}_{\text{sistema}}} \times 255$$
-
-> Quando T ≥ 0 °C, o PID assume a malha fechada seguindo o setpoint dinâmico da rampa até 230 °C. O Coeficiente de Aquecimento (°C/s) exibido na IHM é `(target - N₂) / tempo_de_rampa`.
+> O Coeficiente de Aquecimento (°C/s) exibido na IHM é `(target − N₂) / tempo_de_rampa`. Validação de bancada obrigatória: transição ≤ 0 °C → > 0 °C sem sobressinal.
 
 ---
 
@@ -234,7 +231,7 @@ $$\text{VM} = \frac{\text{Taxa de Aquecimento}_{\text{usuário}}}{\text{Taxa de 
 
 - Arquivo: `backend/data/params.json` (gerado em runtime).
 - Escrita **atômica** com backup rotativo em `params.json.bak`.
-- Parâmetros: ganhos PID (Tubo U e Forno 2), tempos T₁/T₂/T₃, rampa (tempo, N₂, alvo), setpoint do Forno 2.
+- Parâmetros: ganhos PID (Tubo U e Forno 2), tempos T₁/T₂/T₃, rampa (tempo, N₂, alvo, PWM fixo ≤ 0 °C), setpoint do Forno 2.
 - Operação: botões **LER** (recarrega do disco) e **ESCREVER** (persiste) na IHM; a API `PUT /api/config` também valida faixas (422 em valor inválido).
 
 ---
@@ -363,8 +360,8 @@ cd frontend && npm run build
 
 ### Gray areas pendentes (decisões abertas)
 
-1. **Part number do amplificador SPI do termopar** (MAX31855 vs MAX6675) — confirmar com o hardware.
-2. **Interpolação da curva Taxa × % PWM** do Tubo U — calibrar em bancada e injetar via `RampController.set_system_rate()`.
+1. **Part number do amplificador SPI do termopar** (MAX31855 vs MAX6675) — confirmar com o hardware; premissa operacional atual: MAX6675 (sem leitura abaixo de 0 °C).
+2. **Calibração do PWM fixo do Tubo U abaixo de 0 °C** (`ramp.pwm_below_zero`) — medir em bancada e validar a transição ≤ 0 °C → > 0 °C sem sobressinal.
 3. **Margem de proteção de temperatura** (valor que dispara STOP automático).
 4. **Persistência automática vs. apenas via ESCREVER**.
 5. **Porta serial definitiva** no RPi (`/dev/ttyUSB0` vs `/dev/ttyACM0`).

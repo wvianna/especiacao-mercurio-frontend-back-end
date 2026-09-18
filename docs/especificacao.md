@@ -116,12 +116,13 @@ A sequência lógica obedece rigorosamente aos intervalos de tempo definidos:
 
 O sistema utiliza um PID Misto para o Forno 2 (setpoint fixo de $700^\circ C$). Para o Forno 1 (Tubo U), a lógica deve tratar a limitação física do sensor:
 
-- **Piso de Leitura:** Embora o nitrogênio esteja a $-196^\circ C$, o termopar K reporta leituras confiáveis apenas a partir de $-50^\circ C$.
+- **Limite de Leitura:** o termopar do Tubo U fornece leitura apenas acima de $0^\circ C$ (faixa típica do MAX6675: $0$ a $+1024^\circ C$). Entre $-196^\circ C$ (nitrogênio líquido) e $0^\circ C$ o sistema permanece sem leitura e opera em malha aberta.
 - **Cálculo da VM (Variável Manipulada):**
-  - Se $T_{inicial} < 0^\circ C$: O percentual de PWM é calculado pela razão:
-    $$\text{PWM} = \frac{\text{Taxa de Aquecimento}_{usuário}}{\text{Taxa de Aquecimento}_{sistema}}$$
-  - Se $T \ge 0^\circ C$: O PID assume o controle em malha fechada para manter a linearidade da rampa até $230^\circ C$.
+  - Se $T \le 0^\circ C$: o PWM é fixo e persistido (`ramp.pwm_below_zero`, 0–255), ajustável na IHM — sem malha de controle.
+  - Se $T > 0^\circ C$: o PID assume o controle em malha fechada para manter a linearidade da rampa até $230^\circ C$.
 - **Taxa de Aquecimento:** Deve ser calculada e exibida em $^\circ C/s$ com base no tempo de rampa inserido pelo usuário.
+
+> Atualização 2026-09-18: a estratégia anterior de razão de taxas ($T < 0^\circ C$) foi substituída pelo PWM fixo persistido; seu enunciado original em `docs/especificacao.txt` permanece como registro histórico.
 
 ## 6. Interface Web de Supervisão (IHM)
 

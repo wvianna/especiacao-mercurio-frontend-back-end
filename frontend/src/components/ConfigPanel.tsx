@@ -9,6 +9,7 @@ interface FormState {
   rampTime: string;
   nitrogen: string;
   target: string;
+  pwmBelowZero: string;
   kpU: string;
   tiU: string;
   kpF2: string;
@@ -24,6 +25,7 @@ function toForm(c: Config): FormState {
     rampTime: String(c.ramp.time_s),
     nitrogen: String(c.ramp.nitrogen_temp_c),
     target: String(c.ramp.target_temp_c),
+    pwmBelowZero: String(c.ramp.pwm_below_zero),
     kpU: String(c.pid_u.kp),
     tiU: String(c.pid_u.ti),
     kpF2: String(c.pid_f2.kp),
@@ -44,6 +46,7 @@ function toConfig(f: FormState): Config {
       time_s: num(f.rampTime),
       nitrogen_temp_c: num(f.nitrogen),
       target_temp_c: num(f.target),
+      pwm_below_zero: num(f.pwmBelowZero),
     },
     setpoints: { f2_c: num(f.setpointF2) },
   };
@@ -132,6 +135,7 @@ export function ConfigPanel() {
               <Field label="Tempo (s)" value={form.rampTime} onChange={set('rampTime')} tip="Duração total da rampa de aquecimento do Tubo U (etapa T₂), em segundos" />
               <Field label="N₂ inicial (°C)" value={form.nitrogen} onChange={set('nitrogen')} tip="Temperatura inicial do N₂ no Tubo U no início da rampa, em °C" />
               <Field label="Alvo (°C)" value={form.target} onChange={set('target')} tip="Temperatura alvo da rampa do Tubo U, em °C" />
+              <Field label="PWM fixo ≤ 0 °C" value={form.pwmBelowZero} onChange={set('pwmBelowZero')} tip="Potência fixa de PWM do Tubo U (0–255) aplicada sem controle enquanto a temperatura estiver ≤ 0 °C (sem leitura do termopar); acima de 0 °C o PID da rampa assume" />
             </fieldset>
             <fieldset>
               <legend>PID Tubo U</legend>

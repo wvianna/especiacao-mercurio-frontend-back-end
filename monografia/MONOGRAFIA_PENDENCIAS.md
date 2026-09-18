@@ -9,6 +9,7 @@
 | P-005 | Part number do amplificador SPI do termopar (MAX31855 vs MAX6675) | MÉDIO | Autor | NÃO | ABERTA |
 | P-006 | Figuras originais do processo (Fig. 11–30 dos requisitos) não estão no workspace | BAIXO | Autor | NÃO | ABERTA |
 | P-007 | Revisão ABNT fina (fonte das referências em NBR 6023 com nome completo dos autores) | MÉDIO | Autor | NÃO | ABERTA |
+| P-008 | Sincronizar capítulos/abstract e anexos (MONOGRAFIA_PLANO.md, MONOGRAFIA_RASTREABILIDADE.md, MONOGRAFIA_EVIDENCIAS.md) com a nova estratégia de controle do Tubo U (PWM fixo persistido com T ≤ 0 °C substitui a razão de taxas; ver TDD 2026-09-18) | ALTO | Autor | SIM (coerência do cap. desenvolvimento) | ABERTA |
 
 ## Informações ausentes
 

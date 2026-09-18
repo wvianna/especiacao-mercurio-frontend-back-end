@@ -14,6 +14,15 @@ class RampConfig(BaseModel):
     time_s: float = Field(default=300.0, gt=0.0, description="Duração total da rampa (s)")
     nitrogen_temp_c: float = Field(default=-50.0, ge=-300, le=50)
     target_temp_c: float = Field(default=230.0, ge=0, le=300)
+    pwm_below_zero: int = Field(
+        default=128,
+        ge=0,
+        le=255,
+        description=(
+            "PWM fixo do Tubo U (0–255) aplicado sem malha de controle "
+            "enquanto a temperatura estiver ≤ 0 °C (sem leitura do termopar)"
+        ),
+    )
 
 
 class Params(BaseModel):

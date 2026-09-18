@@ -84,3 +84,25 @@ def test_mode_invalid_returns_422(tmp_path):
     with TestClient(app) as client:
         r = client.put("/api/control/mode", json={"mode": "xyz"})
     assert r.status_code == 422
+
+
+def test_put_config_pwm_below_zero_roundtrip(tmp_path):
+    hub = make_hub(tmp_path)
+    app = create_app(hub)
+    body = hub.store.load().model_dump()
+    body["ramp"]["pwm_below_zero"] = 77
+    with TestClient(app) as client:
+        r = client.put("/api/config", json=body)
+        assert r.status_code == 200
+        assert client.get("/api/config").json()["ramp"]["pwm_below_zero"] == 77
+    assert hub.fsm.params.ramp.pwm_below_zero == 77
+
+
+def test_put_config_pwm_below_zero_out_of_range_422(tmp_path):
+    hub = make_hub(tmp_path)
+    app = create_app(hub)
+    body = hub.store.load().model_dump()
+    body["ramp"]["pwm_below_zero"] = 300
+    with TestClient(app) as client:
+        r = client.put("/api/config", json=body)
+    assert r.status_code == 422

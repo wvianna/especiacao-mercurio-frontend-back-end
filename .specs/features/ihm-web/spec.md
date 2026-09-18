@@ -8,7 +8,7 @@ A interface de supervisão deve reduzir o erro humano e dar visibilidade total d
 
 - [ ] Sinótico animado (fluxo azul = hélio/vapor; vermelho = resistências ativas).
 - [ ] Gráficos de tendência em tempo real (4 Hz): VP×SP, °C/s e PWM.
-- [ ] Controles manuais (SV1–SV5, bomba, sliders VM) e painel de configuração (T₁/T₂/T₃, rampa, N₂, PID).
+- [ ] Controles manuais (SV1–SV5, bomba, sliders VM) e painel de configuração (T₁/T₂/T₃, rampa — incl. PWM fixo ≤ 0 °C —, N₂, PID).
 - [ ] Botão STOP de alta prioridade e indicadores de fase/status.
 - [ ] Visual distinto e coeso (skill frontend-design), não "genérico de IA".
 
@@ -63,7 +63,7 @@ A interface de supervisão deve reduzir o erro humano e dar visibilidade total d
 
 1. WHEN o operador alterna SV1–SV5/bomba em modo Manual THEN o backend SHALL receber o comando (`PUT /api/manual`).
 2. WHEN o operador move sliders de VM THEN o backend SHALL receber o PWM manual.
-3. WHEN o operador edita T₁/T₂/T₃, rampa, N₂ ou PID e aciona ESCREVER THEN o frontend SHALL chamar `PUT /api/config` e confirmar sucesso.
+3. WHEN o operador edita T₁/T₂/T₃, rampa (incl. o PWM fixo `pwm_below_zero` aplicado com T ≤ 0 °C), N₂ ou PID e aciona ESCREVER THEN o frontend SHALL chamar `PUT /api/config` e confirmar sucesso.
 4. WHEN o operador aciona LER THEN o painel SHALL refletir `GET /api/config`.
 
 **Independent Test**: interagir com a UI e observar chamadas de rede + estado.

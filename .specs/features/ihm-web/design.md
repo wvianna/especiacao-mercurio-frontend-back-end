@@ -77,7 +77,7 @@ graph TD
 - **Dependencies**: ApiClient.
 
 ### ConfigPanel
-- **Purpose**: entradas T₁/T₂/T₃, rampa, N₂, PID com LER/ESCREVER.
+- **Purpose**: entradas T₁/T₂/T₃, rampa (incl. `pwm_below_zero`), N₂, PID com LER/ESCREVER.
 - **Location**: `frontend/src/components/ConfigPanel.tsx`
 - **Interfaces**:
   - `props: { onRead, onWrite }`.

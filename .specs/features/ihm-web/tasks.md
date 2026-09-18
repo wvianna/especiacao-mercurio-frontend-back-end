@@ -158,7 +158,7 @@ T7 → T8 → T9
 **Done when**:
 
 - [ ] Botões SV1–SV5, bomba e sliders VM chamam `manual`.
-- [ ] Entradas T₁/T₂/T₃, rampa, N₂, PID com LER/ESCREVER (`getConfig`/`putConfig`).
+- [ ] Entradas T₁/T₂/T₃, rampa (incl. PWM fixo ≤ 0 °C), N₂, PID com LER/ESCREVER (`getConfig`/`putConfig`).
 - [ ] Campos inválidos (422) destacados.
 - [ ] Testes de interação passam.
 

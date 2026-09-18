@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated_at": "2026-09-17T14:22:21.364657+00:00",
+  "updated_at": "2026-09-18T11:27:16.314868+00:00",
   "pid_u": {
     "kp": 5.0,
     "ti": 1.8,
@@ -19,7 +19,8 @@
   "ramp": {
     "time_s": 5.0,
     "nitrogen_temp_c": -50.0,
-    "target_temp_c": 230.0
+    "target_temp_c": 230.0,
+    "pwm_below_zero": 128
   },
   "setpoints": {
     "f2_c": 700.0

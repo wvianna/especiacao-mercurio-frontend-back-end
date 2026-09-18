@@ -8,7 +8,7 @@ O backend no Raspberry Pi concentra a inteligência do sistema: Máquina de Esta
 
 - [ ] Enlace serial 4 Hz com o Arduino (JSON de escrita/leitura) com reconexão automática.
 - [ ] FSM com Safe State, ciclo T₀→T₃ e STOP/emergência.
-- [ ] PID do Forno 2 (setpoint 700 °C) e rampa do Forno 1 (estratégia mista) com cálculo de °C/s.
+- [ ] PID do Forno 2 (setpoint 700 °C) e rampa do Forno 1 (PWM fixo ≤ 0 °C + PID > 0 °C) com cálculo de °C/s.
 - [ ] Persistência atômica de parâmetros (JSON em disco) com LER/ESCREVER.
 - [ ] API REST (config/control/manual) e WebSocket de telemetria (4 Hz).
 
@@ -75,12 +75,12 @@ O backend no Raspberry Pi concentra a inteligência do sistema: Máquina de Esta
 
 **Acceptance Criteria**:
 
-1. WHEN T < 0 °C no Tubo U THEN a VM SHALL ser `Taxa usuário / Taxa sistema`.
-2. WHEN T ≥ 0 °C no Tubo U THEN o PID SHALL manter a linearidade da rampa até 230 °C.
+1. WHEN T ≤ 0 °C no Tubo U (sem leitura confiável do termopar) THEN o backend SHALL aplicar o PWM fixo persistido `ramp.pwm_below_zero` (0–255), sem malha de controle.
+2. WHEN T > 0 °C no Tubo U THEN o PID SHALL manter a linearidade da rampa até 230 °C.
 3. WHEN o Forno 2 opera THEN o PID SHALL manter 700 °C.
 4. WHEN a rampa está ativa THEN o backend SHALL calcular e expor o Coeficiente de Aquecimento (°C/s).
 
-**Independent Test**: com simulador de temperatura, verificar VM e °C/s.
+**Independent Test**: com simulador de temperatura, verificar o PWM fixo ≤ 0 °C, a transição para o PID > 0 °C e o °C/s.
 
 ### P1: API + WebSocket de telemetria ⭐ MVP
 
@@ -114,7 +114,10 @@ O backend no Raspberry Pi concentra a inteligência do sistema: Máquina de Esta
 - WHEN o arquivo de parâmetros está corrompido THEN o backend SHALL restaurar backup e alertar.
 - WHEN a serial desconecta durante T₂ (rampa) THEN o backend SHALL entrar em Safe State.
 - WHEN o termopar reporta erro de leitura THEN o controle SHALL manter o último valor válido e sinalizar.
+- WHEN a leitura de temperatura do Tubo U é inválida (NaN) THEN o controle SHALL tratá-la como região sem leitura (PWM fixo ≤ 0 °C).
 - WHEN parâmetros fora de faixa chegam via API THEN o backend SHALL rejeitar com 422.
+- WHEN `ramp.pwm_below_zero` (0–255) é alterado e persistido THEN o backend SHALL aplicá-lo de imediato à rampa em andamento.
+- WHEN o JSON persistido não contém `ramp.pwm_below_zero` (versão anterior) THEN o backend SHALL assumir o default (128) sem erro.
 
 ---
 

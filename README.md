@@ -12,7 +12,7 @@ Sistema de automação e supervisão para **preparação de amostras em especia�
 ## Funcionalidades
 
 - 🔁 **Ciclo automático T₀ → T₃** com Máquina de Estados Finita (derivação, criofocalização, rampa e purga) e **Diagrama de Tempos** (Gantt) com set-point × progresso real.
-- 🌡️ **Controle PID misto**: rampa dinâmica no Tubo U (razão de taxas abaixo de 0 °C, PID acima) e setpoint fixo de 700 °C no Forno 2.
+- 🌡️ **Controle PID misto**: rampa dinâmica no Tubo U (PWM fixo persistido com T ≤ 0 °C — sem leitura do termopar —, PID acima) e setpoint fixo de 700 °C no Forno 2.
 - 🖥️ **IHM Web em tempo real (4 Hz)** com dois modos — **MONITOR** (Diagrama de Tempos, progresso da etapa, atuadores e gráficos por forno) e **CONFIG** (set-points persistentes).
 - 🔧 **Modo manual** com o painel unificado **"Controles e Atuadores"** (válvulas SV1–SV5, bomba e sliders de VM dos fornos).
 - 💾 **Persistência de parâmetros** (ganhos PID, tempos, rampa, setpoints) em JSON com backup rotativo.
@@ -185,7 +185,7 @@ Environment=PORT=8000
 4. **STOP**: parada de emergência de alta prioridade.
 5. **Diagrama de Tempos**: faixas T₀–T₃ com set-points, matriz de atuadores e LED de status por dispositivo (vermelho = ligado, cinza = desligado).
 6. **Gráficos de Tendência**: um painel por forno com temperatura/setpoint (°C, eixo esquerdo) e PWM (%, eixo direito).
-7. **Configuração do Método** (modo CONFIG): edite tempos T₁/T₂/T₃, rampa, temperatura do N₂ e ganhos PID; use **LER** e **SALVAR CONFIGURAÇÕES** (persiste em disco).
+7. **Configuração do Método** (modo CONFIG): edite tempos T₁/T₂/T₃, rampa (incl. PWM fixo ≤ 0 °C), temperatura do N₂ e ganhos PID; use **LER** e **SALVAR CONFIGURAÇÕES** (persiste em disco).
 
 ## Firmware
 

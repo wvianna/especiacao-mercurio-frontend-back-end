@@ -11,11 +11,12 @@
 - Gráficos de tendência: VP×SP, °C/s e PWM, amostragem 4 Hz, buffer ≥ 15 min. **Decidido**.
 - Frontend: React + Vite + TypeScript + canvas customizado (sem lib de gráficos pesada). **Decidido**.
 - Implantação como serviço: unidade systemd em `scripts/systemd/especiacao-mercurio-ihm.service.template` (`Type=forking` + `PIDFile=logs/backend.pid`), com `start.sh`/`stop.sh` como `ExecStart`/`ExecStop`. **Raiz alvo: `/home/dietpi/especiacao-mercurio-frontend-back-end` (usuário `dietpi`) — DietPi/RPi**. **Decidido**.
+- Controle do Tubo U abaixo de 0 °C: PWM fixo persistido (`ramp.pwm_below_zero`, 0–255, default 128) em malha aberta; PID assume em T > 0 °C. A estratégia de razão de taxas/curva Taxa × PWM foi suprimida. **Decidido** (solicitação do operador, 2026-09-18).
 
 ## Open Questions / Gray Areas
 
-- Part number exato do amplificador SPI do termopar (MAX31855 vs MAX6675) — **confirmar com hardware** antes do T2 do firmware.
-- Interpolação da curva "Taxa de Aquecimento × % PWM" do Tubo U — necessária para o cálculo de VM quando T < 0 °C. **Aberto**.
+- Part number exato do amplificador SPI do termopar (MAX31855 vs MAX6675) — **confirmar com hardware**; premissa operacional atual: MAX6675 (sem leitura abaixo de 0 °C).
+- Interpolação da curva "Taxa de Aquecimento × % PWM" do Tubo U — **Suprimida** (2026-09-18): substituída pelo PWM fixo persistido `ramp.pwm_below_zero`.
 - Margem de proteção de temperatura (valor acima do target que dispara STOP). **Aberto**.
 - Persistência automática ao validar edição vs. somente via botão ESCREVER. **Em discussão**.
 - Porta serial definitiva no RPi (/dev/ttyUSB0 vs /dev/ttyACM0). **Validar em M2**.
@@ -41,7 +42,7 @@
 - [ ] Confirmar part number do termopar SPI (hardware).
 - [ ] Mapear porta serial no RPi antes da integração.
 - [ ] Definir margem de proteção de temperatura.
-- [ ] Calibrar curva Taxa × PWM e `set_system_rate`.
+- [ ] Calibrar em bancada o PWM fixo da fase ≤ 0 °C (`ramp.pwm_below_zero`) e validar a transição para o PID.
 
 ## Deferred Ideas
 

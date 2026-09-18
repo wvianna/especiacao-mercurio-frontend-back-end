@@ -102,9 +102,9 @@ def test_t2_drives_ramp_pwm():
     while fsm.state != State.T2 and fsm.state != State.SAFE:
         fsm.tick(0.5, t1=-45.0, t2=699.0)
     assert fsm.state == State.T2
-    # em T2, abaixo de 0°C, pwm_u > 0 (razão de taxas)
+    # em T2, abaixo de 0°C, pwm_u = PWM fixo persistido (default 128)
     fsm.tick(0.25, t1=-45.0, t2=699.0)
-    assert fsm.command_payload()["pwm"]["u"] > 0
+    assert fsm.command_payload()["pwm"]["u"] == 128
 
 
 def test_stage_progress_reports_elapsed_and_total():

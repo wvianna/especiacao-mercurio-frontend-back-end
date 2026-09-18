@@ -78,7 +78,7 @@ T8 → T9
 
 ### T3: Rampa do Tubo U
 
-**What**: Implementar `RampController` (razão de taxas T<0, PID T≥0) e °C/s.
+**What**: Implementar `RampController` (PWM fixo T ≤ 0 °C — ver T10 —, PID T > 0 °C) e °C/s.
 **Where**: `backend/app/ramp.py`
 **Depends on**: T2
 **Reuses**: PidController; TDD "Estratégia de Controle PID e Rampa".
@@ -91,10 +91,10 @@ T8 → T9
 
 **Done when**:
 
-- [ ] T < 0 °C → VM = taxa_usuário/taxa_sistema.
-- [ ] T ≥ 0 °C → PID até 230 °C.
+- [ ] T ≤ 0 °C → `pwm.u` = `ramp.pwm_below_zero` (malha aberta; razão de taxas suprimida — ver T10).
+- [ ] T > 0 °C → PID até 230 °C.
 - [ ] `heating_rate_c_per_s()` calculado do tempo de rampa.
-- [ ] Testes cobrem as duas regiões.
+- [ ] Testes cobrem as duas regiões e a borda 0 °C.
 
 **Tests**: unit
 **Gate**: quick
@@ -233,6 +233,30 @@ T8 → T9
 - [ ] `python -m pytest -q -m e2e` verde.
 
 **Tests**: integration
+**Gate**: full
+
+### T10: PWM fixo do Tubo U abaixo de 0 °C (mudança 2026-09-18)
+
+**What**: Substituir a razão de taxas por um parâmetro persistido `ramp.pwm_below_zero` (0–255) aplicado em malha aberta quando T ≤ 0 °C (sem leitura do termopar); o PID assume em T > 0 °C.
+**Where**: `backend/app/models.py`, `backend/app/ramp.py`, `backend/data/params.json` (runtime), `frontend/src/components/ConfigPanel.tsx`.
+**Depends on**: T3
+**Reuses**: `ConfigStore`/`Params`; painel ConfigPanel (LER/SALVAR).
+**Requirement**: BEC-04, IHM-03
+
+**Tools**:
+
+- MCP: NONE
+- Skill: NONE
+
+**Done when**:
+
+- [x] `ramp.pwm_below_zero` persistido (default 128) e validado em [0, 255] (422 fora de faixa).
+- [x] T ≤ 0 °C → `compute()` retorna o PWM fixo sem PID; T > 0 °C → PID.
+- [x] Campo editável na IHM (CONFIG) com LER/SALVAR.
+- [x] Testes: borda 0 °C, atualização via `update_params`, retrocompat do JSON antigo (evidência: pytest 46 ✓ · vitest 13 ✓ · build ✓ — 2026-09-18).
+- [ ] Validação em bancada da transição ≤ 0 °C → > 0 °C (sem sobressinal) — pendência registrada no `docs/HANDSOFF.md`.
+
+**Tests**: unit + API
 **Gate**: full
 
 ---

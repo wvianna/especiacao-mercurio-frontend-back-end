@@ -243,12 +243,11 @@ O sistema usa **PID misto**:
 
 - **Forno 2**: setpoint fixo de **700 °C**.
 - **Forno 1 (Tubo U)**: rampa dinâmica com duas regiões:
-  - Se `T_inicial < 0 °C`: PWM calculado pela razão
-    $$\text{PWM} = \frac{\text{Taxa de Aquecimento}_{\text{usuário}}}{\text{Taxa de Aquecimento}_{\text{sistema}}}$$
-  - Se `T ≥ 0 °C`: PID em malha fechada mantém a linearidade da rampa até **230 °C**.
+  - Se `T ≤ 0 °C` (sem leitura confiável do termopar): PWM fixo persistido `ramp.pwm_below_zero` (0–255), em malha aberta, **sem malha de controle**;
+  - Se `T > 0 °C`: PID em malha fechada mantém a linearidade da rampa até **230 °C**.
 - O **Coeficiente de Aquecimento (°C/s)** é calculado a partir do tempo de rampa informado pelo usuário e exibido na IHM.
 
-> **Piso de leitura**: o termopar tipo K reporta leituras confiáveis a partir de **−50 °C**, mesmo com o N₂ a −196 °C. A rampa de controle considera −50 °C como temperatura inicial efetiva.
+> **Limite de leitura**: o termopar do Tubo U (MAX6675) fornece leitura apenas acima de **0 °C**. Entre −196 °C (N₂ líquido) e 0 °C o sistema opera em malha aberta com potência fixa ajustável na IHM (`ramp.pwm_below_zero`), persistida junto aos demais parâmetros.
 
 ### Persistência dos Parâmetros Ajustados
 
@@ -266,7 +265,8 @@ Os parâmetros ajustados pelo operador **devem ser persistentes** entre execuç�
   "ramp": {
     "time_s": 300,
     "nitrogen_temp_c": -50,
-    "target_temp_c": 230
+    "target_temp_c": 230,
+    "pwm_below_zero": 128
   },
   "setpoints": { "f2_c": 700.0 }
 }
@@ -276,7 +276,7 @@ Os parâmetros ajustados pelo operador **devem ser persistentes** entre execuç�
 
 - Escrita ocorre ao acionar **ESCREVER** e, opcionalmente, ao final de uma edição validada na IHM.
 - Leitura ocorre na **inicialização do Backend** e ao acionar **LER**.
-- Validação de faixas antes da escrita (ex.: `0 < t1..t3`, `ramp.time_s > 0`, `target_temp_c ≤ 230`).
+- Validação de faixas antes da escrita (ex.: `0 < t1..t3`, `ramp.time_s > 0`, `0 ≤ pwm_below_zero ≤ 255`).
 - Backups rotativos do arquivo anterior em caso de falha na gravação.
 
 ### Gráficos de Tendência da Temperatura (Requisito obrigatório)
@@ -332,7 +332,7 @@ A IHM deve exibir, em tempo real:
 | Perda de comunicação serial (RPi↔Arduino)      | Alto    | Média         | Watchdog no Arduino desliga fornos após 1 s sem pacotes; alarme na IHM    |
 | Sobre-aquecimento do Tubo U / Forno 2          | Alto    | Baixa         | STOP de alta prioridade; limite de temperatura; relé de segurança         |
 | Congelamento permanente do Tubo U              | Alto    | Baixa         | SV5 abaixa copo em falha; desligamento imediato dos aquecedores           |
-| Leitura imprecisa do termopar abaixo de −50 °C | Médio   | Alta          | Piso de leitura tratado na lógica de rampa; calibração do sensor           |
+| Ausência de leitura do termopar abaixo de 0 °C | Médio   | Alta          | Malha aberta com PWM fixo persistido (`pwm_below_zero`); PID assume em T > 0 °C |
 | Corrupção do arquivo de parâmetros persistidos | Médio   | Baixa         | Escrita atômica + backup rotativo + validação de schema                    |
 | Deriva dos ganhos PID entre métodos            | Médio   | Média         | Parametrização persistente por método; testes de sintonia                   |
 | Erro humano no modo Manual                     | Médio   | Média         | Confirmação de ações críticas; indicadores de estado claros                 |
@@ -399,7 +399,7 @@ A IHM deve exibir, em tempo real:
 
 **Cenários críticos**:
 
-- ✅ Cálculo da VM (PWM) com `T_inicial < 0 °C` (razão de taxas) e `T ≥ 0 °C` (PID).
+- ✅ Controle do Tubo U com `T ≤ 0 °C` (PWM fixo persistido) e `T > 0 °C` (PID).
 - ✅ Persistência: gravar parâmetros, reiniciar Backend, confirmar leitura idêntica.
 - ✅ Gráfico: VP acompanha SP durante a rampa; °C/s exibido e consistente.
 - ✅ STOP em qualquer fase retorna ao Safe State (SV5 abaixa copo, fornos desligados).
@@ -517,10 +517,11 @@ Como se trata de um sistema embarcado local (não um serviço em nuvem), o "roll
 
 | #   | Questão                                                  | Contexto                            | Responsável | Status           |
 | --- | -------------------------------------------------------- | ----------------------------------- | ----------- | ---------------- |
-| 1   | Interpolação da curva Taxa × PWM do Tubo U               | Calibração da rampa                 | A definir   | 🔴 Aberta        |
+| 1   | Interpolação da curva Taxa × PWM do Tubo U               | Calibração da rampa                 | —           | ✅ Suprimida (substituída por `pwm_below_zero`, 2026-09-18) |
 | 2   | Estratégia exata de backup rotativo dos parâmetros       | Persistência                        | A definir   | 🟡 Em discussão  |
 | 3   | Margem de proteção de temperatura                        | Segurança                           | A definir   | 🔴 Aberta        |
 | 4   | Persistência automática vs. somente via botão ESCREVER   | UX                                  | A definir   | 🟡 Em discussão  |
+| 5   | Valor de `pwm_below_zero` e transição ≤ 0 → > 0 °C sem sobressinal | Calibração em bancada      | A definir   | 🔴 Aberta        |
 
 **Legenda**: 🔴 Aberta · 🟡 Em discussão · ✅ Resolvida
 

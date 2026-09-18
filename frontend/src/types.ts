@@ -47,6 +47,7 @@ export interface RampConfig {
   time_s: number;
   nitrogen_temp_c: number;
   target_temp_c: number;
+  pwm_below_zero: number; // PWM fixo do Tubo U (0–255) sem controle enquanto T ≤ 0 °C
 }
 
 export interface Config {
